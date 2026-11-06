@@ -1,0 +1,6 @@
+{
+  "name": "E-PEMILIHAN KETUA OSIS",
+  "description": "Sistem Pemilihan Ketua OSIS Digital modern, cepat, aman, dan responsif untuk sekolah/madrasah.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

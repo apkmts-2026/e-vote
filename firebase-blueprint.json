@@ -1,0 +1,144 @@
+{
+  "entities": {
+    "Calon": {
+      "title": "Calon",
+      "description": "Pasangan Calon Ketua dan Wakil Ketua OSIS",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "noUrut": { "type": "number" },
+        "nama": { "type": "string" },
+        "kelas": { "type": "string" },
+        "foto": { "type": "string" },
+        "visi": { "type": "string" },
+        "misi": { "type": "array" },
+        "aktif": { "type": "boolean" },
+        "tagline": { "type": "string" }
+      },
+      "required": ["id", "noUrut", "nama", "visi", "aktif"]
+    },
+    "Pemilih": {
+      "title": "Pemilih",
+      "description": "Daftar Pemilih Tetap (DPT) Siswa",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nisNisn": { "type": "string" },
+        "nama": { "type": "string" },
+        "kelas": { "type": "string" },
+        "kodePemilih": { "type": "string" },
+        "statusMemilih": { "type": "boolean" },
+        "waktuMemilih": { "type": "string" }
+      },
+      "required": ["id", "nisNisn", "nama", "kelas", "kodePemilih", "statusMemilih"]
+    },
+    "Suara": {
+      "title": "Suara",
+      "description": "Surat Suara Masuk Hasil Pencoblosan",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "idPemilih": { "type": "string" },
+        "idCalon": { "type": "string" },
+        "waktu": { "type": "string" }
+      },
+      "required": ["id", "idPemilih", "idCalon", "waktu"]
+    },
+    "PengaturanSekolah": {
+      "title": "PengaturanSekolah",
+      "description": "Identitas Profil Sekolah dan Madrasah",
+      "type": "object",
+      "properties": {
+        "namaSekolah": { "type": "string" },
+        "npsn": { "type": "string" },
+        "nsm": { "type": "string" },
+        "alamat": { "type": "string" },
+        "telepon": { "type": "string" },
+        "email": { "type": "string" },
+        "website": { "type": "string" },
+        "logo": { "type": "string" },
+        "namaKepalaSekolah": { "type": "string" },
+        "nipKepalaSekolah": { "type": "string" },
+        "namaKetuaPanitia": { "type": "string" },
+        "namaPembinaOsis": { "type": "string" }
+      },
+      "required": ["namaSekolah"]
+    },
+    "PengaturanPemilihan": {
+      "title": "PengaturanPemilihan",
+      "description": "Jadwal dan Parameter Pemilihan OSIS",
+      "type": "object",
+      "properties": {
+        "namaKegiatan": { "type": "string" },
+        "tahunPelajaran": { "type": "string" },
+        "periode": { "type": "string" },
+        "tanggalPemilihan": { "type": "string" },
+        "waktuMulai": { "type": "string" },
+        "waktuSelesai": { "type": "string" },
+        "status": { "type": "string" },
+        "hasilTerbukaUntukAdmin": { "type": "boolean" },
+        "hasilDitampilkanKePenonton": { "type": "boolean" },
+        "warnaTema": { "type": "string" },
+        "gasWebhookUrl": { "type": "string" }
+      },
+      "required": ["namaKegiatan", "status"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Riwayat Aktivitas Sistem Pemilihan",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "waktu": { "type": "string" },
+        "user": { "type": "string" },
+        "aktivitas": { "type": "string" },
+        "keterangan": { "type": "string" }
+      },
+      "required": ["id", "waktu", "user", "aktivitas"]
+    },
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Akun Administrator dan Panitia Pemilihan",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "username": { "type": "string" },
+        "nama": { "type": "string" },
+        "role": { "type": "string" },
+        "passwordHash": { "type": "string" },
+        "terakhirLogin": { "type": "string" }
+      },
+      "required": ["id", "username", "nama", "role"]
+    }
+  },
+  "firestore": {
+    "/calon/{calonId}": {
+      "schema": { "$ref": "#/entities/Calon" },
+      "description": "Data Pasangan Calon Ketua dan Wakil Ketua OSIS"
+    },
+    "/pemilih/{pemilihId}": {
+      "schema": { "$ref": "#/entities/Pemilih" },
+      "description": "Data Siswa Pemilih Tetap (DPT)"
+    },
+    "/suara/{suaraId}": {
+      "schema": { "$ref": "#/entities/Suara" },
+      "description": "Surat suara yang telah dicoblos"
+    },
+    "/pengaturan/sekolah": {
+      "schema": { "$ref": "#/entities/PengaturanSekolah" },
+      "description": "Konfigurasi identitas lembaga sekolah"
+    },
+    "/pengaturan/pemilihan": {
+      "schema": { "$ref": "#/entities/PengaturanPemilihan" },
+      "description": "Konfigurasi status dan parameter pemilihan"
+    },
+    "/audit_logs/{logId}": {
+      "schema": { "$ref": "#/entities/AuditLog" },
+      "description": "Catatan audit log aktivitas"
+    },
+    "/admin_users/{userId}": {
+      "schema": { "$ref": "#/entities/AdminUser" },
+      "description": "Data akun administrator dan panitia"
+    }
+  }
+}

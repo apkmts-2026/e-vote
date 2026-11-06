@@ -1,0 +1,66 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // 1. Data Calon
+    match /calon/{calonId} {
+      allow read: if true;
+      allow write: if isValidId(calonId);
+    }
+
+    // 2. Data Pemilih (DPT)
+    match /pemilih/{pemilihId} {
+      allow read: if true;
+      allow write: if isValidId(pemilihId);
+    }
+
+    // 3. Suara (Kotak Suara Digital)
+    match /suara/{suaraId} {
+      allow read: if true;
+      // Suara boleh dibuat saat coblos, dan dihapus saat reset kotak suara oleh panitia
+      allow create: if isValidId(suaraId) && 
+        request.resource.data.idPemilih is string && 
+        request.resource.data.idCalon is string &&
+        (
+          ('waktuSuara' in request.resource.data && request.resource.data.waktuSuara is string) ||
+          ('waktu' in request.resource.data && request.resource.data.waktu is string)
+        );
+      allow delete: if isValidId(suaraId);
+      allow update: if false;
+    }
+
+    // 4. Pengaturan (Sekolah & Pemilihan)
+    match /pengaturan/{docId} {
+      allow read: if true;
+      allow write: if isValidId(docId);
+    }
+
+    // 5. Audit Log
+    match /audit_logs/{logId} {
+      allow read: if true;
+      allow create: if isValidId(logId);
+      allow update, delete: if false;
+    }
+
+    // 6. Admin Users
+    match /admin_users/{userId} {
+      allow read: if true;
+      allow write: if isValidId(userId);
+    }
+
+    // 7. Test connection collection
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+
+    // Default deny for unhandled paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
