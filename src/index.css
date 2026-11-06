@@ -1,5 +1,33 @@
 @import "tailwindcss";
 
+@keyframes rainbowFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.bg-rainbow-bright {
+  background: linear-gradient(
+    135deg,
+    #ff1744 0%,
+    #ff6d00 15%,
+    #ffd600 30%,
+    #00e676 45%,
+    #00e5ff 60%,
+    #2979ff 75%,
+    #651fff 88%,
+    #f50057 100%
+  );
+  background-size: 300% 300%;
+  animation: rainbowFlow 14s ease infinite;
+}
+
 @media print {
   body {
     background-color: #ffffff !important;

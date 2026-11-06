@@ -720,6 +720,16 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
     .font-mono { font-family: 'JetBrains Mono', monospace; }
     .gold-gradient { background: linear-gradient(135deg, #f59e0b, #eab308, #d97706); }
     .gold-glow { box-shadow: 0 0 20px -3px rgba(245, 158, 11, 0.4); }
+    @keyframes rainbowFlow {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .bg-rainbow-bright {
+      background: linear-gradient(135deg, #ff1744 0%, #ff6d00 15%, #ffd600 30%, #00e676 45%, #00e5ff 60%, #2979ff 75%, #651fff 88%, #f50057 100%);
+      background-size: 300% 300%;
+      animation: rainbowFlow 14s ease infinite;
+    }
     @media print {
       body * { visibility: hidden; }
       #print-area, #print-area * { visibility: visible; }
@@ -1405,32 +1415,35 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
   <!-- ============================================================== -->
   <!-- 3. VIEW QUICK COUNT (PENONTON / PROYEKTOR AULA) -->
   <!-- ============================================================== -->
-  <div id="view-mode-quickcount" class="hidden flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 space-y-6">
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-950 p-4 rounded-2xl border border-slate-800">
+  <div id="view-mode-quickcount" class="hidden flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 space-y-6 rounded-3xl bg-rainbow-bright shadow-2xl border border-white/40">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white/95 backdrop-blur-md p-4 rounded-2xl border border-white/80 shadow-xl text-slate-900">
       <div>
-        <h2 class="text-xl sm:text-2xl font-black text-white uppercase">LIVE QUICK COUNT PEMILIHAN</h2>
-        <p class="text-xs text-slate-400">Data terupdate real-time langsung dari database Google Sheets.</p>
+        <div class="flex items-center gap-2 mb-1">
+          <h2 class="text-xl sm:text-2xl font-black text-slate-900 uppercase">LIVE QUICK COUNT PEMILIHAN</h2>
+          <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white shadow-sm">🌈 Rainbow</span>
+        </div>
+        <p class="text-xs text-slate-600 font-medium">Data terupdate real-time langsung dari database Google Sheets.</p>
       </div>
-      <button onclick="refreshDataGAS(true)" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 rounded-xl">
+      <button onclick="refreshDataGAS(true)" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-800 rounded-xl border border-slate-300 shadow-sm transition-all">
         🔄 Refresh Hasil
       </button>
     </div>
 
     <!-- 4 Bar Stats Quick Count -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-      <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800"><p class="text-[11px] text-slate-400 uppercase font-bold">Total DPT</p><h3 id="qc-dpt" class="text-2xl font-black text-white mt-1">-</h3></div>
-      <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800"><p class="text-[11px] text-slate-400 uppercase font-bold">Suara Masuk</p><h3 id="qc-suara" class="text-2xl font-black text-amber-400 mt-1">-</h3></div>
-      <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800"><p class="text-[11px] text-slate-400 uppercase font-bold">Partisipasi</p><h3 id="qc-partisipasi" class="text-2xl font-black text-emerald-400 mt-1">0%</h3></div>
-      <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800"><p class="text-[11px] text-slate-400 uppercase font-bold">Belum Memilih</p><h3 id="qc-belum" class="text-2xl font-black text-slate-300 mt-1">-</h3></div>
+      <div class="bg-white/95 backdrop-blur-md p-4 rounded-2xl border border-white/80 shadow-lg text-slate-900"><p class="text-[11px] text-slate-500 uppercase font-bold">Total DPT</p><h3 id="qc-dpt" class="text-2xl font-black text-slate-900 mt-1">-</h3></div>
+      <div class="bg-white/95 backdrop-blur-md p-4 rounded-2xl border border-white/80 shadow-lg text-slate-900"><p class="text-[11px] text-slate-500 uppercase font-bold">Suara Masuk</p><h3 id="qc-suara" class="text-2xl font-black text-amber-600 mt-1">-</h3></div>
+      <div class="bg-white/95 backdrop-blur-md p-4 rounded-2xl border border-white/80 shadow-lg text-slate-900"><p class="text-[11px] text-slate-500 uppercase font-bold">Partisipasi</p><h3 id="qc-partisipasi" class="text-2xl font-black text-emerald-600 mt-1">0%</h3></div>
+      <div class="bg-white/95 backdrop-blur-md p-4 rounded-2xl border border-white/80 shadow-lg text-slate-900"><p class="text-[11px] text-slate-500 uppercase font-bold">Belum Memilih</p><h3 id="qc-belum" class="text-2xl font-black text-slate-600 mt-1">-</h3></div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      <div class="lg:col-span-5 bg-slate-950 p-5 rounded-3xl border border-slate-800 flex flex-col items-center justify-center">
-        <h3 class="text-xs font-black text-white uppercase tracking-wider mb-4 w-full">Diagram Suara</h3>
+      <div class="lg:col-span-5 bg-white/95 backdrop-blur-md p-5 rounded-3xl border border-white/80 shadow-xl flex flex-col items-center justify-center text-slate-900">
+        <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider mb-4 w-full">Diagram Suara</h3>
         <div class="relative w-48 h-48 sm:w-56 sm:h-56"><canvas id="chart-qc"></canvas></div>
       </div>
-      <div class="lg:col-span-7 bg-slate-950 p-6 rounded-3xl border border-slate-800 space-y-4">
-        <h3 class="text-xs font-black text-white uppercase tracking-wider">Perolehan Suara Pasangan Calon</h3>
+      <div class="lg:col-span-7 bg-white/95 backdrop-blur-md p-6 rounded-3xl border border-white/80 shadow-xl space-y-4 text-slate-900">
+        <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider">Perolehan Suara Pasangan Calon</h3>
         <div id="qc-candidate-bars" class="space-y-4 pt-1"></div>
       </div>
     </div>
@@ -2185,12 +2198,12 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
         const suara = perolehan[c.id] || 0;
         const persen = totalSuara > 0 ? ((suara / totalSuara) * 100).toFixed(1) : '0';
         return \`
-          <div class="space-y-1.5 p-3.5 rounded-2xl bg-slate-900 border border-slate-800">
+          <div class="space-y-1.5 p-3.5 rounded-2xl bg-slate-50 border border-slate-200 shadow-sm">
             <div class="flex justify-between text-xs font-bold">
-              <span class="text-white">0\${c.noUrut}. \${c.nama}</span>
-              <span class="text-amber-400 font-mono">\${persen}% (\${suara} Suara)</span>
+              <span class="text-slate-900">0\${c.noUrut}. \${c.nama}</span>
+              <span class="text-amber-600 font-mono">\${persen}% (\${suara} Suara)</span>
             </div>
-            <div class="w-full bg-slate-950 h-3 rounded-full overflow-hidden border border-slate-800">
+            <div class="w-full bg-slate-200 h-3 rounded-full overflow-hidden border border-slate-300">
               <div class="gold-gradient h-full rounded-full transition-all duration-500" style="width: \${persen}%"></div>
             </div>
           </div>
@@ -2211,7 +2224,7 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
         type: 'doughnut',
         data: {
           labels: labels,
-          datasets: [{ data: totalSuara > 0 ? dataValues : [1], backgroundColor: ['#f59e0b', '#3b82f6', '#10b981', '#ec4899'], borderWidth: 2, borderColor: '#020617' }]
+          datasets: [{ data: totalSuara > 0 ? dataValues : [1], backgroundColor: ['#f59e0b', '#3b82f6', '#10b981', '#ec4899'], borderWidth: 2, borderColor: '#ffffff' }]
         },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '70%' }
       });
