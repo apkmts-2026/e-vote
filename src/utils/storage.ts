@@ -141,23 +141,43 @@ export const DEFAULT_AUDIT_LOGS: AuditLogItem[] = [
   }
 ];
 
-// Helper to safely get from localStorage
+// In-memory fallback if localStorage is unavailable (SSR, Node test runner, or restricted browser)
+const memoryStorage = new Map<string, string>();
+
+function isStorageAvailable(): boolean {
+  try {
+    return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+  } catch {
+    return false;
+  }
+}
+
+// Helper to safely get from localStorage with memory fallback
 function getStorage<T>(key: string, defaultValue: T): T {
   try {
-    const item = localStorage.getItem(key);
-    if (!item) return defaultValue;
-    return JSON.parse(item);
+    if (isStorageAvailable()) {
+      const item = window.localStorage.getItem(key);
+      if (!item) return defaultValue;
+      return JSON.parse(item);
+    }
+    const memItem = memoryStorage.get(key);
+    if (!memItem) return defaultValue;
+    return JSON.parse(memItem);
   } catch (e) {
-    console.error(`Error reading ${key} from localStorage:`, e);
+    console.error(`Error reading ${key} from storage:`, e);
     return defaultValue;
   }
 }
 
 function setStorage<T>(key: string, value: T): void {
   try {
-    localStorage.setItem(key, JSON.stringify(value));
+    const serialized = JSON.stringify(value);
+    if (isStorageAvailable()) {
+      window.localStorage.setItem(key, serialized);
+    }
+    memoryStorage.set(key, serialized);
   } catch (e) {
-    console.error(`Error writing ${key} to localStorage:`, e);
+    console.error(`Error writing ${key} to storage:`, e);
   }
 }
 

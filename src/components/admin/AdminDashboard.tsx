@@ -192,6 +192,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [showCurrentPassword, setShowCurrentPassword] = useState<boolean>(false);
   const [showNewPassword, setShowNewPassword] = useState<boolean>(false);
 
+  // In-App Confirmation Modal & Toast (Zero window.alert / window.confirm)
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmLabel?: string;
+    confirmStyle?: 'danger' | 'warning' | 'primary';
+    onConfirm: () => void | Promise<void>;
+  } | null>(null);
+
+  const [toastNotification, setToastNotification] = useState<{
+    message: string;
+    type: 'success' | 'error' | 'info';
+  } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setToastNotification({ message, type });
+    setTimeout(() => {
+      setToastNotification(null);
+    }, 4500);
+  };
+
   // Login handler
   const handleAdminLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -370,12 +392,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     CloudService.saveCalonCloud(StorageService.getCalon());
   };
 
-  const handleDeleteCalon = async (id: string) => {
-    if (confirm('Apakah Anda yakin ingin menghapus data calon ini secara PERMANEN?')) {
-      StorageService.deleteCalon(id, currentAdmin?.username || 'admin');
-      await CloudService.deleteSingleCalonCloud(id);
-      onDataChange();
-    }
+  const handleDeleteCalon = (id: string) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Hapus Calon Permanen',
+      message: 'Apakah Anda yakin ingin menghapus data calon ini secara PERMANEN? Data akan dihapus selamanya dari Cloud Firestore dan browser.',
+      confirmLabel: 'Hapus Permanen',
+      confirmStyle: 'danger',
+      onConfirm: async () => {
+        StorageService.deleteCalon(id, currentAdmin?.username || 'admin');
+        await CloudService.deleteSingleCalonCloud(id);
+        onDataChange();
+        showToast('✓ Data calon berhasil dihapus secara permanen.', 'success');
+      },
+    });
   };
 
   // Photo Upload Handler for Calon
@@ -472,15 +502,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   const handleRemoveLogo = () => {
-    if (confirm('Hapus logo lembaga kustom dan gunakan lambang emas OSIS standar?')) {
-      const updated = { ...schoolSettingsForm, logo: '' };
-      setSchoolSettingsForm(updated);
-      StorageService.savePengaturanSekolah(updated, currentAdmin?.username || 'admin');
-      CloudService.savePengaturanSekolahCloud(updated);
-      setSettingsSuccessMsg('Logo kustom dihapus. Menggunakan lambang standar OSIS.');
-      setTimeout(() => setSettingsSuccessMsg(''), 4000);
-      onDataChange();
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Hapus Logo Kustom',
+      message: 'Hapus logo lembaga kustom dan gunakan lambang emas OSIS standar?',
+      confirmLabel: 'Gunakan Lambang Standar',
+      confirmStyle: 'warning',
+      onConfirm: () => {
+        const updated = { ...schoolSettingsForm, logo: '' };
+        setSchoolSettingsForm(updated);
+        StorageService.savePengaturanSekolah(updated, currentAdmin?.username || 'admin');
+        CloudService.savePengaturanSekolahCloud(updated);
+        setSettingsSuccessMsg('Logo kustom dihapus. Menggunakan lambang standar OSIS.');
+        setTimeout(() => setSettingsSuccessMsg(''), 4000);
+        onDataChange();
+        showToast('Logo kustom berhasil dihapus. Menggunakan lambang standar OSIS.', 'info');
+      },
+    });
   };
 
   // Save Pemilih Manual
@@ -539,29 +577,41 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   // Reset Individual Voter Status
-  const handleResetVoter = async (id: string, nama: string) => {
-    if (confirm(`Reset status pemilih ${nama}? Siswa akan dapat memberikan suara kembali.`)) {
-      StorageService.resetPemilihStatus(id, currentAdmin?.username || 'admin');
-      await CloudService.resetPemilihStatusCloud(id);
-      onDataChange();
-    }
+  const handleResetVoter = (id: string, nama: string) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Reset Hak Suara Pemilih',
+      message: `Reset status pemilih "${nama}"? Siswa ini akan dapat memberikan suara kembali.`,
+      confirmLabel: 'Reset Hak Suara',
+      confirmStyle: 'warning',
+      onConfirm: async () => {
+        StorageService.resetPemilihStatus(id, currentAdmin?.username || 'admin');
+        await CloudService.resetPemilihStatusCloud(id);
+        onDataChange();
+        showToast(`✓ Hak suara untuk pemilih ${nama} telah direset.`, 'success');
+      },
+    });
   };
 
   // Clear All Voters (Permanent Purge of DPT & Votes from Cloud & Local)
-  const handleClearAllPemilih = async () => {
+  const handleClearAllPemilih = () => {
     if (pemilihList.length === 0) {
-      alert('Daftar DPT Pemilih sudah kosong.');
+      showToast('Daftar DPT Pemilih sudah kosong.', 'info');
       return;
     }
-    const confirmed = confirm(
-      `PERINGATAN HAPUS PERMANEN!\n\nApakah Anda yakin ingin menghapus SEMUA (${pemilihList.length}) data DPT Pemilih dan seluruh suara masuk secara PERMANEN dari Cloud Firestore dan browser?\n\nSemua data dummy/contoh maupun data baru yang telah dihapus TIDAK AKAN MUNCUL KEMBALI.`
-    );
-    if (confirmed) {
-      StorageService.clearAllPemilih(currentAdmin?.username || 'admin');
-      await CloudService.deleteAllPemilihCloud();
-      onDataChange();
-      alert('✓ Seluruh data DPT Pemilih dan suara masuk telah berhasil dihapus secara permanen.');
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: 'PERINGATAN HAPUS SELURUH DPT',
+      message: `Apakah Anda yakin ingin menghapus SEMUA (${pemilihList.length}) data DPT Pemilih dan seluruh suara masuk secara PERMANEN dari Cloud Firestore dan browser?\n\nSemua data dummy/contoh maupun data baru yang telah dihapus TIDAK AKAN MUNCUL KEMBALI.`,
+      confirmLabel: 'Hapus Semua Permanen',
+      confirmStyle: 'danger',
+      onConfirm: async () => {
+        StorageService.clearAllPemilih(currentAdmin?.username || 'admin');
+        await CloudService.deleteAllPemilihCloud();
+        onDataChange();
+        showToast('✓ Seluruh data DPT Pemilih dan suara masuk telah berhasil dihapus secara permanen.', 'success');
+      },
+    });
   };
 
   // Change Admin Password
@@ -620,27 +670,31 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   // Reset Password to Default
-  const handleResetPasswordDefault = async (userId: string) => {
+  const handleResetPasswordDefault = (userId: string) => {
     const targetUser = adminUsers.find((u) => u.id === userId);
     if (!targetUser) return;
     const defaultPass = targetUser.username === 'admin' ? 'admin123' : 'osis2026';
 
-    const confirmed = confirm(
-      `KONFIRMASI RESET PASSWORD DEFAULT:\n\nApakah Anda yakin ingin mereset password akun "${targetUser.nama}" (${targetUser.username}) kembali ke password default: "${defaultPass}"?\n\nPerubahan akan langsung disimpan ke Cloud Firestore.`
-    );
-
-    if (confirmed) {
-      try {
-        StorageService.resetAdminPasswordToDefault(userId, currentAdmin?.username || 'admin');
-        const updatedUser: AdminUser = { ...targetUser, passwordHash: defaultPass };
-        await CloudService.saveAdminUserCloud(updatedUser);
-        setPasswordChangeSuccess(`✓ Password untuk akun ${targetUser.username} telah direset ke default: "${defaultPass}"`);
-        setTimeout(() => setPasswordChangeSuccess(''), 6000);
-        onDataChange();
-      } catch (err) {
-        alert('Gagal mereset password: ' + String(err));
-      }
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Reset Password Akun ke Default',
+      message: `Apakah Anda yakin ingin mereset password akun "${targetUser.nama}" (${targetUser.username}) kembali ke password default: "${defaultPass}"?\n\nPerubahan akan langsung disimpan ke Cloud Firestore.`,
+      confirmLabel: 'Reset ke Default',
+      confirmStyle: 'warning',
+      onConfirm: async () => {
+        try {
+          StorageService.resetAdminPasswordToDefault(userId, currentAdmin?.username || 'admin');
+          const updatedUser: AdminUser = { ...targetUser, passwordHash: defaultPass };
+          await CloudService.saveAdminUserCloud(updatedUser);
+          setPasswordChangeSuccess(`✓ Password untuk akun ${targetUser.username} telah direset ke default: "${defaultPass}"`);
+          setTimeout(() => setPasswordChangeSuccess(''), 6000);
+          onDataChange();
+          showToast(`✓ Password ${targetUser.username} berhasil direset ke "${defaultPass}"`, 'success');
+        } catch (err) {
+          showToast('Gagal mereset password: ' + String(err), 'error');
+        }
+      },
+    });
   };
 
   // Save School Settings
@@ -665,15 +719,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   // Reset only votes
   const handleWipeVotes = () => {
-    if (
-      confirm(
-        'PERINGATAN: Apakah Anda yakin ingin MENGOSONGKAN KOTAK SUARA? Semua suara masuk akan dihapus dari Cloud dan semua siswa dapat memilih kembali.'
-      )
-    ) {
-      StorageService.resetOnlyVotes(currentAdmin?.username || 'admin');
-      CloudService.resetOnlyVotesCloud();
-      onDataChange();
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Kosongkan Kotak Suara',
+      message: 'PERINGATAN: Apakah Anda yakin ingin MENGOSONGKAN KOTAK SUARA? Semua suara masuk akan dihapus dari Cloud dan semua siswa dapat memilih kembali.',
+      confirmLabel: 'Kosongkan Kotak Suara',
+      confirmStyle: 'danger',
+      onConfirm: () => {
+        StorageService.resetOnlyVotes(currentAdmin?.username || 'admin');
+        CloudService.resetOnlyVotesCloud();
+        onDataChange();
+        showToast('✓ Kotak suara berhasil dikosongkan. Hak pilih semua siswa telah dipulihkan.', 'success');
+      },
+    });
   };
 
   // Copy GAS File Code
@@ -1477,14 +1535,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             )}
                             <button
                               type="button"
-                              onClick={async () => {
-                                if (confirm(`Hapus pemilih ${p.nama} (${p.nisNisn}) secara PERMANEN?\n\nData akan dihapus selamanya dari Cloud Firestore dan browser, dan tidak akan muncul kembali.`)) {
-                                  StorageService.deletePemilih(p.id, currentAdmin?.username || 'admin');
-                                  await CloudService.deleteSinglePemilihCloud(p.id);
-                                  onDataChange();
-                                }
+                              onClick={() => {
+                                setConfirmDialog({
+                                  isOpen: true,
+                                  title: 'Hapus Pemilih Permanen',
+                                  message: `Hapus pemilih "${p.nama}" (${p.nisNisn}) secara PERMANEN?\n\nData akan dihapus selamanya dari Cloud Firestore dan browser, dan tidak akan muncul kembali.`,
+                                  confirmLabel: 'Hapus Permanen',
+                                  confirmStyle: 'danger',
+                                  onConfirm: async () => {
+                                    StorageService.deletePemilih(p.id, currentAdmin?.username || 'admin');
+                                    await CloudService.deleteSinglePemilihCloud(p.id);
+                                    onDataChange();
+                                    showToast(`✓ Pemilih ${p.nama} berhasil dihapus permanen.`, 'success');
+                                  },
+                                });
                               }}
-                              className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg"
+                              className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
                               title="Hapus Pemilih Permanen"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -3104,6 +3170,82 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         pemilihList={pemilihList}
         suaraList={suaraList}
       />
+
+      {/* IN-APP TOAST NOTIFICATION (REPLACING WINDOW.ALERT) */}
+      {toastNotification && (
+        <div className="fixed top-20 right-4 sm:right-8 z-50 max-w-sm w-full bg-white border border-slate-200 rounded-2xl p-4 shadow-2xl flex items-start gap-3 transition-all animate-in fade-in slide-in-from-top duration-200">
+          {toastNotification.type === 'success' && <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />}
+          {toastNotification.type === 'error' && <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />}
+          {toastNotification.type === 'info' && <Shield className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />}
+          <div className="flex-1 text-xs text-slate-800 font-medium whitespace-pre-line leading-relaxed">
+            {toastNotification.message}
+          </div>
+          <button
+            type="button"
+            onClick={() => setToastNotification(null)}
+            className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* IN-APP CONFIRMATION MODAL (REPLACING WINDOW.CONFIRM) */}
+      {confirmDialog && confirmDialog.isOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
+                confirmDialog.confirmStyle === 'danger'
+                  ? 'bg-red-100 text-red-600'
+                  : confirmDialog.confirmStyle === 'warning'
+                  ? 'bg-amber-100 text-amber-700'
+                  : 'bg-blue-100 text-blue-700'
+              }`}>
+                {confirmDialog.confirmStyle === 'danger' ? (
+                  <Trash2 className="w-5 h-5" />
+                ) : (
+                  <AlertTriangle className="w-5 h-5" />
+                )}
+              </div>
+              <h3 className="text-base font-black text-slate-900 uppercase">
+                {confirmDialog.title}
+              </h3>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-line">
+              {confirmDialog.message}
+            </p>
+
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmDialog(null)}
+                className="py-2.5 px-4 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-100 cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const action = confirmDialog.onConfirm;
+                  setConfirmDialog(null);
+                  if (action) await action();
+                }}
+                className={`py-2.5 px-4 rounded-xl text-xs font-black shadow-md cursor-pointer transition-all ${
+                  confirmDialog.confirmStyle === 'danger'
+                    ? 'bg-red-600 hover:bg-red-700 text-white shadow-red-500/20'
+                    : confirmDialog.confirmStyle === 'warning'
+                    ? 'bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-amber-500/20'
+                    : 'bg-slate-900 hover:bg-slate-800 text-white'
+                }`}
+              >
+                {confirmDialog.confirmLabel || 'Konfirmasi'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

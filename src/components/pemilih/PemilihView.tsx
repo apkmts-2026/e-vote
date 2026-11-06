@@ -101,11 +101,7 @@ export const PemilihView: React.FC<PemilihViewProps> = ({
     }, 300);
   };
 
-  // Quick Autofill for testing/demo
-  const handleAutofillDemo = (voter: Pemilih) => {
-    setInputToken(voter.kodePemilih);
-    setLoginError('');
-  };
+
 
   // Handle Vote Confirmation
   const initiateVote = (calon: Calon) => {
@@ -593,35 +589,6 @@ export const PemilihView: React.FC<PemilihViewProps> = ({
             </button>
           </form>
 
-          {/* Quick Demo Autofill Section (Collapsible) */}
-          <details className="mt-6 pt-4 border-t border-slate-200 group">
-            <summary className="text-xs font-bold text-slate-400 hover:text-amber-600 cursor-pointer uppercase tracking-wider flex items-center justify-between transition-colors list-none">
-              <span>Bantuan Kode Pemilih (Klik untuk Demo)</span>
-              <span className="text-[10px] text-amber-600 font-bold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                Uji Coba
-              </span>
-            </summary>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              {pemilihList
-                .filter((p) => !p.statusMemilih)
-                .slice(0, 4)
-                .map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => handleAutofillDemo(p)}
-                    className="text-left p-2.5 rounded-xl border border-slate-200 hover:border-amber-300 hover:bg-amber-50/50 transition-colors text-xs group cursor-pointer"
-                  >
-                    <p className="font-mono font-bold text-amber-600 text-xs">{p.kodePemilih}</p>
-                    <p className="font-medium text-slate-700 truncate">{p.nama}</p>
-                    <p className="text-[10px] text-slate-400">Kelas {p.kelas}</p>
-                  </button>
-                ))}
-            </div>
-            {pemilihList.filter((p) => !p.statusMemilih).length === 0 && (
-              <p className="text-xs text-slate-400 italic mt-2">Semua pemilih dalam database telah memberikan suara.</p>
-            )}
-          </details>
 
           {/* Security Guarantee Notice */}
           <div className="mt-5 flex items-center justify-center gap-2 text-xs text-slate-400">

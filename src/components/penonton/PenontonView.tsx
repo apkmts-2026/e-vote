@@ -116,11 +116,8 @@ export const PenontonView: React.FC<PenontonViewProps> = ({
               <div className="flex items-center gap-2 flex-wrap justify-center md:justify-start mb-1">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase bg-amber-100 text-amber-900 border border-amber-300">
                   <Radio className="w-3.5 h-3.5 animate-pulse text-amber-600" />
-                  MONITOR RESMI LAYAR PENONTON
+                  MONITOR SUARA
                 </div>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white shadow-sm">
-                  🌈 Rainbow Edition
-                </span>
               </div>
               <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-slate-900 uppercase">
                 {pemilihan.namaKegiatan}

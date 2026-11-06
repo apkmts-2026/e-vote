@@ -1419,8 +1419,9 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white/95 backdrop-blur-md p-4 rounded-2xl border border-white/80 shadow-xl text-slate-900">
       <div>
         <div class="flex items-center gap-2 mb-1">
-          <h2 class="text-xl sm:text-2xl font-black text-slate-900 uppercase">LIVE QUICK COUNT PEMILIHAN</h2>
-          <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white shadow-sm">🌈 Rainbow</span>
+          <span class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-black tracking-wider uppercase bg-amber-100 text-amber-900 border border-amber-300">
+            📡 MONITOR SUARA
+          </span>
         </div>
         <p class="text-xs text-slate-600 font-medium">Data terupdate real-time langsung dari database Google Sheets.</p>
       </div>
