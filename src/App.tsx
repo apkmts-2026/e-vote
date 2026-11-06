@@ -80,20 +80,35 @@ export default function App() {
 
     // 3. Real-time Listeners across all devices
     const unsubCalon = CloudService.subscribeCalon((list) => {
-      if (list && list.length > 0) {
-        setCalonList(list);
-        StorageService.saveCalon(list, 'cloud-sync');
-      }
+      const items = list || [];
+      setCalonList(items);
+      StorageService.saveCalon(items, 'cloud-sync');
     });
 
     const unsubPemilih = CloudService.subscribePemilih((list) => {
-      if (list && list.length > 0) {
-        setPemilihList(list);
-      }
+      const items = list || [];
+      setPemilihList(items);
+      StorageService.savePemilih(items, 'cloud-sync');
     });
 
     const unsubSuara = CloudService.subscribeSuara((list) => {
       setSuaraList(list || []);
+    });
+
+    const unsubAdminUsers = CloudService.subscribeAdminUsers((users) => {
+      if (users && users.length > 0) {
+        setAdminUsers(users);
+        StorageService.saveAdminUsers(users, 'cloud-sync');
+        // Update current admin session if password changed
+        const activeSession = StorageService.getActiveAdminSession();
+        if (activeSession) {
+          const updatedActive = users.find((u) => u.id === activeSession.id);
+          if (updatedActive) {
+            StorageService.setActiveAdminSession(updatedActive);
+            setCurrentAdmin(updatedActive);
+          }
+        }
+      }
     });
 
     const unsubPengaturan = CloudService.subscribePengaturan(
@@ -120,6 +135,7 @@ export default function App() {
       unsubCalon();
       unsubPemilih();
       unsubSuara();
+      unsubAdminUsers();
       unsubPengaturan();
       unsubLogs();
     };

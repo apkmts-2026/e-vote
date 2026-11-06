@@ -100,31 +100,10 @@ export const DEFAULT_CALON: Calon[] = [
   }
 ];
 
-export const DEFAULT_PEMILIH: Pemilih[] = [
-  { id: 'pemilih-101', nisNisn: '0081234001', nama: 'Aditya Pratama', kelas: 'VII-A', kodePemilih: 'VOTE-7A01', statusMemilih: true, waktuMemilih: '2026-10-03T07:45:12.000Z' },
-  { id: 'pemilih-102', nisNisn: '0081234002', nama: 'Anisa Rahmawati', kelas: 'VII-A', kodePemilih: 'VOTE-7A02', statusMemilih: true, waktuMemilih: '2026-10-03T07:48:30.000Z' },
-  { id: 'pemilih-103', nisNisn: '0081234003', nama: 'Bayu Wicaksono', kelas: 'VII-A', kodePemilih: 'VOTE-7A03', statusMemilih: true, waktuMemilih: '2026-10-03T07:51:15.000Z' },
-  { id: 'pemilih-104', nisNisn: '0081234004', nama: 'Citra Dewi', kelas: 'VII-B', kodePemilih: 'VOTE-7B01', statusMemilih: false },
-  { id: 'pemilih-105', nisNisn: '0081234005', nama: 'Danang Tri', kelas: 'VII-B', kodePemilih: 'VOTE-7B02', statusMemilih: true, waktuMemilih: '2026-10-03T08:02:44.000Z' },
-  { id: 'pemilih-106', nisNisn: '0071234006', nama: 'Eka Lestari', kelas: 'VIII-A', kodePemilih: 'VOTE-8A01', statusMemilih: true, waktuMemilih: '2026-10-03T08:15:20.000Z' },
-  { id: 'pemilih-107', nisNisn: '0071234007', nama: 'Fajar Nugroho', kelas: 'VIII-A', kodePemilih: 'VOTE-8A02', statusMemilih: false },
-  { id: 'pemilih-108', nisNisn: '0071234008', nama: 'Gita Maharani', kelas: 'VIII-B', kodePemilih: 'VOTE-8B01', statusMemilih: true, waktuMemilih: '2026-10-03T08:22:11.000Z' },
-  { id: 'pemilih-109', nisNisn: '0071234009', nama: 'Hendra Saputra', kelas: 'VIII-C', kodePemilih: 'VOTE-8C01', statusMemilih: false },
-  { id: 'pemilih-110', nisNisn: '0061234010', nama: 'Indah Kusuma', kelas: 'IX-A', kodePemilih: 'VOTE-9A01', statusMemilih: true, waktuMemilih: '2026-10-03T08:30:05.000Z' },
-  { id: 'pemilih-111', nisNisn: '0061234011', nama: 'Joko Susanto', kelas: 'IX-A', kodePemilih: 'VOTE-9A02', statusMemilih: true, waktuMemilih: '2026-10-03T08:35:19.000Z' },
-  { id: 'pemilih-112', nisNisn: '0061234012', nama: 'Kurnia Dewi', kelas: 'IX-B', kodePemilih: 'VOTE-9B01', statusMemilih: false },
-];
+// Clean default data - no dummy voters or sample votes
+export const DEFAULT_PEMILIH: Pemilih[] = [];
 
-export const DEFAULT_SUARA: Suara[] = [
-  { id: 'vote-uuid-001', idPemilih: 'pemilih-101', idCalon: 'calon-01', waktuSuara: '2026-10-03T07:45:12.000Z', status: 'SAH' },
-  { id: 'vote-uuid-002', idPemilih: 'pemilih-102', idCalon: 'calon-02', waktuSuara: '2026-10-03T07:48:30.000Z', status: 'SAH' },
-  { id: 'vote-uuid-003', idPemilih: 'pemilih-103', idCalon: 'calon-01', waktuSuara: '2026-10-03T07:51:15.000Z', status: 'SAH' },
-  { id: 'vote-uuid-004', idPemilih: 'pemilih-105', idCalon: 'calon-03', waktuSuara: '2026-10-03T08:02:44.000Z', status: 'SAH' },
-  { id: 'vote-uuid-005', idPemilih: 'pemilih-106', idCalon: 'calon-02', waktuSuara: '2026-10-03T08:15:20.000Z', status: 'SAH' },
-  { id: 'vote-uuid-006', idPemilih: 'pemilih-108', idCalon: 'calon-01', waktuSuara: '2026-10-03T08:22:11.000Z', status: 'SAH' },
-  { id: 'vote-uuid-007', idPemilih: 'pemilih-110', idCalon: 'calon-02', waktuSuara: '2026-10-03T08:30:05.000Z', status: 'SAH' },
-  { id: 'vote-uuid-008', idPemilih: 'pemilih-111', idCalon: 'calon-01', waktuSuara: '2026-10-03T08:35:19.000Z', status: 'SAH' },
-];
+export const DEFAULT_SUARA: Suara[] = [];
 
 export const DEFAULT_ADMIN_USERS: AdminUser[] = [
   {
@@ -140,7 +119,7 @@ export const DEFAULT_ADMIN_USERS: AdminUser[] = [
     username: 'panitia',
     nama: 'Panitia Pemilihan OSIS',
     role: 'PANITIA',
-    passwordHash: 'panitia123',
+    passwordHash: 'osis2026',
     terakhirLogin: '2026-10-03T07:35:00.000Z'
   }
 ];
@@ -244,7 +223,15 @@ export const StorageService = {
     const target = list.find((p) => p.id === id);
     const filtered = list.filter((p) => p.id !== id);
     this.savePemilih(filtered, actor);
-    this.addAuditLog(actor, 'Hapus Pemilih', `Menghapus pemilih: ${target?.nama || id}`);
+    // Also remove any vote cast by this voter to maintain data consistency
+    const votes = this.getSuara().filter((s) => s.idPemilih !== id);
+    setStorage(STORAGE_KEYS.SUARA, votes);
+    this.addAuditLog(actor, 'Hapus Pemilih Permanen', `Menghapus pemilih: ${target?.nama || id} (${target?.nisNisn || ''})`);
+  },
+  clearAllPemilih(actor: string = 'admin'): void {
+    setStorage(STORAGE_KEYS.PEMILIH, []);
+    setStorage(STORAGE_KEYS.SUARA, []);
+    this.addAuditLog(actor, 'Kosongkan DPT Permanen', 'Semua data DPT pemilih dan suara telah dikosongkan secara permanen');
   },
   importPemilihBulk(newList: Omit<Pemilih, 'id' | 'statusMemilih' | 'waktuMemilih'>[], actor: string = 'admin'): { added: number; skipped: number } {
     const current = this.getPemilih();
@@ -381,6 +368,25 @@ export const StorageService = {
     if (user) {
       this.addAuditLog(user.username, 'Login Admin', `Admin ${user.nama} berhasil masuk ke sistem`);
     }
+  },
+  updateAdminPassword(userId: string, newPassword: string, actor: string = 'admin'): boolean {
+    const users = this.getAdminUsers();
+    const user = users.find((u) => u.id === userId);
+    if (!user) return false;
+    user.passwordHash = newPassword;
+    this.saveAdminUsers(users, actor);
+    this.addAuditLog(actor, 'Ubah Password Admin', `Password akun ${user.username} (${user.nama}) berhasil diperbarui`);
+    return true;
+  },
+  resetAdminPasswordToDefault(userId: string, actor: string = 'admin'): { success: boolean; defaultPass: string; user?: AdminUser } {
+    const users = this.getAdminUsers();
+    const user = users.find((u) => u.id === userId);
+    if (!user) return { success: false, defaultPass: '' };
+    const defaultPass = user.username === 'admin' ? 'admin123' : 'osis2026';
+    user.passwordHash = defaultPass;
+    this.saveAdminUsers(users, actor);
+    this.addAuditLog(actor, 'Reset Password Admin', `Password akun ${user.username} direset ke default (${defaultPass})`);
+    return { success: true, defaultPass, user };
   },
 
   // Audit Logs

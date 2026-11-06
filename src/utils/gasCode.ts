@@ -145,28 +145,12 @@ function inisialisasiDatabase() {
     ]);
   }
 
-  // 3. Sheet PEMILIH
+  // 3. Sheet PEMILIH (Clean - Tanpa Data Dummy)
   let sheetPemilih = ss.getSheetByName(CONFIG.SHEETS.PEMILIH);
   if (!sheetPemilih) {
     sheetPemilih = ss.insertSheet(CONFIG.SHEETS.PEMILIH);
     sheetPemilih.appendRow(['ID_PEMILIH', 'NIS_NISN', 'NAMA', 'KELAS', 'KODE_PEMILIH', 'STATUS_MEMILIH', 'WAKTU_MEMILIH']);
     sheetPemilih.getRange(1, 1, 1, 7).setFontWeight('bold').setBackground('#f1f5f9');
-    
-    const sampleVoters = [
-      ['pem-01', '0081234001', 'Aditya Pratama', 'VII-A', 'VOTE-7A01', 'BELUM', ''],
-      ['pem-02', '0081234002', 'Anisa Rahmawati', 'VII-A', 'VOTE-7A02', 'BELUM', ''],
-      ['pem-03', '0081234003', 'Bagas Dwi Putra', 'VII-B', 'VOTE-7B01', 'BELUM', ''],
-      ['pem-04', '0081234004', 'Citra Lestari', 'VII-B', 'VOTE-7B02', 'BELUM', ''],
-      ['pem-05', '0081234005', 'Dimas Anggara', 'VIII-A', 'VOTE-8A01', 'BELUM', ''],
-      ['pem-06', '0081234006', 'Eka Nur Wahyuni', 'VIII-A', 'VOTE-8A02', 'BELUM', ''],
-      ['pem-07', '0081234007', 'Faisal Akbar', 'VIII-B', 'VOTE-8B01', 'BELUM', ''],
-      ['pem-08', '0081234008', 'Gita Permata', 'VIII-B', 'VOTE-8B02', 'BELUM', ''],
-      ['pem-09', '0081234009', 'Hendra Saputra', 'IX-A', 'VOTE-9A01', 'BELUM', ''],
-      ['pem-10', '0081234010', 'Indah Khairunnisa', 'IX-A', 'VOTE-9A02', 'BELUM', ''],
-      ['pem-11', '0081234011', 'Joko Susanto', 'IX-B', 'VOTE-9B01', 'BELUM', ''],
-      ['pem-12', '0081234012', 'Kurnia Putri', 'IX-B', 'VOTE-9B02', 'BELUM', '']
-    ];
-    sheetPemilih.getRange(2, 1, sampleVoters.length, 7).setValues(sampleVoters);
   }
 
   // 4. Sheet SUARA
@@ -2257,26 +2241,13 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
             { id: 'c2', noUrut: 2, nama: 'Rizky Pratama & Siti Nurhaliza', kelas: 'VIII-C & VIII-D', tagline: 'Sinergi & Lingkungan', visi: 'Madrasah asri dan berwawasan global.', foto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500', aktif: true },
             { id: 'c3', noUrut: 3, nama: 'Fajar Ramadhan & Zahra Amelia', kelas: 'VIII-B & VIII-A', tagline: 'Mandiri & Tangguh', visi: 'OSIS berintegritas dan peduli.', foto: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500', aktif: true }
           ],
-          pemilihList: [
-            { id: 'p1', nisNisn: '0081234001', nama: 'Aditya Pratama', kelas: 'VII-A', kodePemilih: 'VOTE-7A01', statusMemilih: false },
-            { id: 'p2', nisNisn: '0081234002', nama: 'Anisa Rahmawati', kelas: 'VII-A', kodePemilih: 'VOTE-7A02', statusMemilih: false },
-            { id: 'p3', nisNisn: '0081234003', nama: 'Bagas Dwi Putra', kelas: 'VII-B', kodePemilih: 'VOTE-7B01', statusMemilih: false },
-            { id: 'p4', nisNisn: '0081234004', nama: 'Citra Lestari', kelas: 'VII-B', kodePemilih: 'VOTE-7B02', statusMemilih: false },
-            { id: 'p5', nisNisn: '0081234005', nama: 'Dimas Anggara', kelas: 'VIII-A', kodePemilih: 'VOTE-8A01', statusMemilih: false },
-            { id: 'p6', nisNisn: '0081234006', nama: 'Eka Nur Wahyuni', kelas: 'VIII-A', kodePemilih: 'VOTE-8A02', statusMemilih: false },
-            { id: 'p7', nisNisn: '0081234007', nama: 'Faisal Akbar', kelas: 'VIII-B', kodePemilih: 'VOTE-8B01', statusMemilih: false },
-            { id: 'p8', nisNisn: '0081234008', nama: 'Gita Permata', kelas: 'VIII-B', kodePemilih: 'VOTE-8B02', statusMemilih: false },
-            { id: 'p9', nisNisn: '0081234009', nama: 'Hendra Saputra', kelas: 'IX-A', kodePemilih: 'VOTE-9A01', statusMemilih: false },
-            { id: 'p10', nisNisn: '0081234010', nama: 'Indah Khairunnisa', kelas: 'IX-A', kodePemilih: 'VOTE-9A02', statusMemilih: false },
-            { id: 'p11', nisNisn: '0081234011', nama: 'Joko Susanto', kelas: 'IX-B', kodePemilih: 'VOTE-9B01', statusMemilih: false },
-            { id: 'p12', nisNisn: '0081234012', nama: 'Kurnia Putri', kelas: 'IX-B', kodePemilih: 'VOTE-9B02', statusMemilih: false }
-          ],
+          pemilihList: [],
           suaraList: [],
           statistik: {
-            totalDPT: 12,
+            totalDPT: 0,
             totalSuaraMasuk: 0,
             sudahMemilih: 0,
-            belumMemilih: 12,
+            belumMemilih: 0,
             partisipasi: '0.0'
           },
           auditLogs: [

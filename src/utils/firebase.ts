@@ -5,8 +5,11 @@ import {
   getDoc,
   getDocFromServer,
   setDoc,
+  deleteDoc,
   getDocs,
   collection,
+  query,
+  where,
   onSnapshot,
   writeBatch,
   Unsubscribe
@@ -23,7 +26,6 @@ import {
 } from '../types';
 import {
   DEFAULT_CALON,
-  DEFAULT_PEMILIH,
   DEFAULT_PENGATURAN_SEKOLAH,
   DEFAULT_PENGATURAN_PEMILIHAN,
   DEFAULT_ADMIN_USERS,
@@ -109,13 +111,13 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   throw new Error(JSON.stringify(errInfo));
 }
 
-// Check if Firestore has been seeded, if not seed it with default data
+// Check if Firestore has been seeded, if not seed it with default data (without dummy voters)
 export async function seedInitialFirestoreData(): Promise<void> {
   try {
     const sekolahRef = doc(db, COLLECTIONS.PENGATURAN, 'sekolah');
     const snap = await getDoc(sekolahRef);
     if (!snap.exists()) {
-      console.log('Menyiapkan data awal E-Pemilihan ke Firebase Firestore...');
+      console.log('Menyiapkan konfigurasi awal E-Pemilihan ke Firebase Firestore...');
 
       // 1. Pengaturan Sekolah & Pemilihan
       await setDoc(sekolahRef, DEFAULT_PENGATURAN_SEKOLAH);
@@ -126,25 +128,51 @@ export async function seedInitialFirestoreData(): Promise<void> {
         await setDoc(doc(db, COLLECTIONS.CALON, c.id), c);
       }
 
-      // 3. Pemilih Sample
-      for (const p of DEFAULT_PEMILIH) {
-        await setDoc(doc(db, COLLECTIONS.PEMILIH, p.id), p);
-      }
-
-      // 4. Admin users
+      // 3. Admin users
       for (const u of DEFAULT_ADMIN_USERS) {
         await setDoc(doc(db, COLLECTIONS.ADMIN_USERS, u.id), u);
       }
 
-      // 5. Initial log
+      // 4. Initial log
       for (const l of DEFAULT_AUDIT_LOGS) {
         await setDoc(doc(db, COLLECTIONS.AUDIT_LOGS, l.id), l);
       }
 
-      console.log('✓ Data awal berhasil di-seed ke Firebase Firestore!');
+      console.log('✓ Konfigurasi awal berhasil disimpan ke Firebase Firestore!');
     }
+
+    // Selalu jalankan pembersihan dummy data jika masih tersisa di Firestore
+    await purgeDummyDataInFirestore();
   } catch (err) {
-    console.warn('Status seed data Firestore:', err);
+    console.warn('Status inisialisasi Firestore:', err);
+  }
+}
+
+// Fungsi pembersihan permanen data dummy / data contoh dari Firestore
+export async function purgeDummyDataInFirestore(): Promise<void> {
+  try {
+    const dummyPemilihIds = [
+      'pemilih-101', 'pemilih-102', 'pemilih-103', 'pemilih-104',
+      'pemilih-105', 'pemilih-106', 'pemilih-107', 'pemilih-108',
+      'pemilih-109', 'pemilih-110', 'pemilih-111', 'pemilih-112'
+    ];
+    const dummyVoteIds = [
+      'vote-uuid-001', 'vote-uuid-002', 'vote-uuid-003', 'vote-uuid-004',
+      'vote-uuid-005', 'vote-uuid-006', 'vote-uuid-007', 'vote-uuid-008'
+    ];
+
+    const batch = writeBatch(db);
+    for (const id of dummyPemilihIds) {
+      batch.delete(doc(db, COLLECTIONS.PEMILIH, id));
+    }
+    for (const vId of dummyVoteIds) {
+      batch.delete(doc(db, COLLECTIONS.SUARA, vId));
+    }
+    await batch.commit();
+    console.log('✓ Data pemilih contoh & dummy vote dibersihkan permanen.');
+  } catch (err) {
+    // Abaikan jika tidak ada error izin
+    console.warn('Pembersihan dummy:', err);
   }
 }
 
@@ -355,8 +383,75 @@ export const CloudService = {
       }
 
       await batch.commit();
+      console.log('✓ Kotak suara berhasil di-reset di Cloud');
     } catch (err) {
       console.error('Error resetOnlyVotesCloud:', err);
     }
+  },
+
+  // Delete Single Pemilih permanently from Cloud
+  async deleteSinglePemilihCloud(id: string): Promise<void> {
+    try {
+      await deleteDoc(doc(db, COLLECTIONS.PEMILIH, id));
+      // Delete any vote cast by this voter if exists
+      const q = query(collection(db, COLLECTIONS.SUARA), where('idPemilih', '==', id));
+      const voteSnaps = await getDocs(q);
+      if (!voteSnaps.empty) {
+        const batch = writeBatch(db);
+        voteSnaps.forEach((d) => batch.delete(d.ref));
+        await batch.commit();
+      }
+      console.log(`✓ Pemilih ${id} berhasil dihapus permanen dari Firestore`);
+    } catch (err) {
+      console.error('Error deleteSinglePemilihCloud:', err);
+    }
+  },
+
+  // Delete All Pemilih (Clear DPT) permanently from Cloud
+  async deleteAllPemilihCloud(): Promise<void> {
+    try {
+      // 1. Delete all Pemilih
+      const pemilihSnap = await getDocs(collection(db, COLLECTIONS.PEMILIH));
+      const batch = writeBatch(db);
+      pemilihSnap.forEach((d) => batch.delete(d.ref));
+
+      // 2. Delete all Votes
+      const suaraSnap = await getDocs(collection(db, COLLECTIONS.SUARA));
+      suaraSnap.forEach((d) => batch.delete(d.ref));
+
+      await batch.commit();
+      console.log('✓ Seluruh data DPT Pemilih & suara berhasil dihapus permanen dari Firestore');
+    } catch (err) {
+      console.error('Error deleteAllPemilihCloud:', err);
+    }
+  },
+
+  // Delete Single Calon permanently from Cloud
+  async deleteSingleCalonCloud(id: string): Promise<void> {
+    try {
+      await deleteDoc(doc(db, COLLECTIONS.CALON, id));
+      console.log(`✓ Calon ${id} berhasil dihapus permanen dari Firestore`);
+    } catch (err) {
+      console.error('Error deleteSingleCalonCloud:', err);
+    }
+  },
+
+  // Save/Update Admin User in Cloud
+  async saveAdminUserCloud(user: AdminUser): Promise<void> {
+    try {
+      await setDoc(doc(db, COLLECTIONS.ADMIN_USERS, user.id), user);
+      console.log(`✓ Akun admin ${user.username} berhasil disimpan di Firestore`);
+    } catch (err) {
+      console.error('Error saveAdminUserCloud:', err);
+    }
+  },
+
+  // Sync real-time listener for Admin Users
+  subscribeAdminUsers(callback: (users: AdminUser[]) => void): Unsubscribe {
+    return onSnapshot(collection(db, COLLECTIONS.ADMIN_USERS), (snapshot) => {
+      const list: AdminUser[] = [];
+      snapshot.forEach((d) => list.push(d.data() as AdminUser));
+      callback(list);
+    }, (err) => console.error('Error subscribe AdminUsers:', err));
   }
 };

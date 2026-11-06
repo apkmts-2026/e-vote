@@ -181,6 +181,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [webhookUrlInput, setWebhookUrlInput] = useState<string>(pemilihan.gasWebhookUrl || '');
   const [webhookTestStatus, setWebhookTestStatus] = useState<string>('');
 
+  // Admin Password Management States
+  const [selectedUserForPassword, setSelectedUserForPassword] = useState<string>('admin-01');
+  const [currentPasswordInput, setCurrentPasswordInput] = useState<string>('');
+  const [newPasswordInput, setNewPasswordInput] = useState<string>('');
+  const [confirmPasswordInput, setConfirmPasswordInput] = useState<string>('');
+  const [passwordChangeSuccess, setPasswordChangeSuccess] = useState<string>('');
+  const [passwordChangeError, setPasswordChangeError] = useState<string>('');
+  const [isChangingPassword, setIsChangingPassword] = useState<boolean>(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState<boolean>(false);
+  const [showNewPassword, setShowNewPassword] = useState<boolean>(false);
+
   // Login handler
   const handleAdminLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -359,11 +370,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     CloudService.saveCalonCloud(StorageService.getCalon());
   };
 
-  const handleDeleteCalon = (id: string) => {
-    if (confirm('Apakah Anda yakin ingin menghapus data calon ini?')) {
+  const handleDeleteCalon = async (id: string) => {
+    if (confirm('Apakah Anda yakin ingin menghapus data calon ini secara PERMANEN?')) {
       StorageService.deleteCalon(id, currentAdmin?.username || 'admin');
+      await CloudService.deleteSingleCalonCloud(id);
       onDataChange();
-      CloudService.saveCalonCloud(StorageService.getCalon());
     }
   };
 
@@ -528,11 +539,107 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   // Reset Individual Voter Status
-  const handleResetVoter = (id: string, nama: string) => {
+  const handleResetVoter = async (id: string, nama: string) => {
     if (confirm(`Reset status pemilih ${nama}? Siswa akan dapat memberikan suara kembali.`)) {
       StorageService.resetPemilihStatus(id, currentAdmin?.username || 'admin');
-      CloudService.resetPemilihStatusCloud(id);
+      await CloudService.resetPemilihStatusCloud(id);
       onDataChange();
+    }
+  };
+
+  // Clear All Voters (Permanent Purge of DPT & Votes from Cloud & Local)
+  const handleClearAllPemilih = async () => {
+    if (pemilihList.length === 0) {
+      alert('Daftar DPT Pemilih sudah kosong.');
+      return;
+    }
+    const confirmed = confirm(
+      `PERINGATAN HAPUS PERMANEN!\n\nApakah Anda yakin ingin menghapus SEMUA (${pemilihList.length}) data DPT Pemilih dan seluruh suara masuk secara PERMANEN dari Cloud Firestore dan browser?\n\nSemua data dummy/contoh maupun data baru yang telah dihapus TIDAK AKAN MUNCUL KEMBALI.`
+    );
+    if (confirmed) {
+      StorageService.clearAllPemilih(currentAdmin?.username || 'admin');
+      await CloudService.deleteAllPemilihCloud();
+      onDataChange();
+      alert('✓ Seluruh data DPT Pemilih dan suara masuk telah berhasil dihapus secara permanen.');
+    }
+  };
+
+  // Change Admin Password
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordChangeSuccess('');
+    setPasswordChangeError('');
+
+    const targetUser = adminUsers.find((u) => u.id === selectedUserForPassword);
+    if (!targetUser) {
+      setPasswordChangeError('Pengguna tidak ditemukan dalam sistem.');
+      return;
+    }
+
+    if (!currentPasswordInput) {
+      setPasswordChangeError('Masukkan password saat ini untuk verifikasi.');
+      return;
+    }
+
+    if (currentPasswordInput !== targetUser.passwordHash) {
+      setPasswordChangeError('Password saat ini salah. Silakan periksa kembali.');
+      return;
+    }
+
+    if (!newPasswordInput || newPasswordInput.length < 4) {
+      setPasswordChangeError('Password baru minimal 4 karakter.');
+      return;
+    }
+
+    if (newPasswordInput !== confirmPasswordInput) {
+      setPasswordChangeError('Konfirmasi password baru tidak cocok.');
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      // 1. Update localStorage
+      StorageService.updateAdminPassword(targetUser.id, newPasswordInput, currentAdmin?.username || 'admin');
+
+      // 2. Update Firestore Cloud
+      const updatedUser: AdminUser = { ...targetUser, passwordHash: newPasswordInput };
+      await CloudService.saveAdminUserCloud(updatedUser);
+
+      // 3. Clear inputs & notify
+      setCurrentPasswordInput('');
+      setNewPasswordInput('');
+      setConfirmPasswordInput('');
+      setPasswordChangeSuccess(`✓ Password untuk akun "${targetUser.nama}" (${targetUser.username}) berhasil diperbarui dan tersimpan permanen di Cloud!`);
+      setTimeout(() => setPasswordChangeSuccess(''), 6000);
+      onDataChange();
+    } catch (err) {
+      setPasswordChangeError('Gagal memperbarui password: ' + String(err));
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
+  // Reset Password to Default
+  const handleResetPasswordDefault = async (userId: string) => {
+    const targetUser = adminUsers.find((u) => u.id === userId);
+    if (!targetUser) return;
+    const defaultPass = targetUser.username === 'admin' ? 'admin123' : 'osis2026';
+
+    const confirmed = confirm(
+      `KONFIRMASI RESET PASSWORD DEFAULT:\n\nApakah Anda yakin ingin mereset password akun "${targetUser.nama}" (${targetUser.username}) kembali ke password default: "${defaultPass}"?\n\nPerubahan akan langsung disimpan ke Cloud Firestore.`
+    );
+
+    if (confirmed) {
+      try {
+        StorageService.resetAdminPasswordToDefault(userId, currentAdmin?.username || 'admin');
+        const updatedUser: AdminUser = { ...targetUser, passwordHash: defaultPass };
+        await CloudService.saveAdminUserCloud(updatedUser);
+        setPasswordChangeSuccess(`✓ Password untuk akun ${targetUser.username} telah direset ke default: "${defaultPass}"`);
+        setTimeout(() => setPasswordChangeSuccess(''), 6000);
+        onDataChange();
+      } catch (err) {
+        alert('Gagal mereset password: ' + String(err));
+      }
     }
   };
 
@@ -1251,6 +1358,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <Plus className="w-3.5 h-3.5" />
                   Input Manual
                 </button>
+
+                {pemilihList.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleClearAllPemilih}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors"
+                    title="Hapus seluruh data pemilih dan suara secara permanen dari Cloud Firestore dan browser"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Kosongkan DPT ({pemilihList.length})
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1358,14 +1477,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             )}
                             <button
                               type="button"
-                              onClick={() => {
-                                if (confirm(`Hapus pemilih ${p.nama}?`)) {
+                              onClick={async () => {
+                                if (confirm(`Hapus pemilih ${p.nama} (${p.nisNisn}) secara PERMANEN?\n\nData akan dihapus selamanya dari Cloud Firestore dan browser, dan tidak akan muncul kembali.`)) {
                                   StorageService.deletePemilih(p.id, currentAdmin?.username || 'admin');
+                                  await CloudService.deleteSinglePemilihCloud(p.id);
                                   onDataChange();
                                 }
                               }}
                               className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg"
-                              title="Hapus Pemilih"
+                              title="Hapus Pemilih Permanen"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -2222,17 +2342,70 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
             )}
 
-            {/* SUBTAB 3: USER ADMIN & PANITIA */}
+            {/* SUBTAB 3: USER ADMIN & PANITIA (MANAJEMEN PASSWORD) */}
             {pengaturanSubTab === 'user_admin' && (
               <div className="space-y-6">
-                <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
-                  <div className="p-6 border-b border-slate-100">
-                    <h3 className="text-base font-black text-slate-900 uppercase">
-                      DAFTAR PANITIA & ADMINISTRATOR
-                    </h3>
+                
+                {/* Header Information */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <span className="text-xs font-black text-amber-500 uppercase tracking-wider">
+                      KEAMANAN & HAK AKSES
+                    </span>
+                    <h3 className="text-xl font-black text-slate-900">MANAJEMEN AKUN & PASSWORD</h3>
                     <p className="text-xs text-slate-500">
-                      Pengguna yang berwenang mengelola data calon, DPT pemilih, dan membuka hasil suara.
+                      Kelola password akun Administrator dan Panitia. Setiap perubahan tersimpan otomatis dan permanen di Cloud Firestore.
                     </p>
+                  </div>
+                </div>
+
+                {/* Feedback Alerts */}
+                {passwordChangeSuccess && (
+                  <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-xs flex items-center justify-between shadow-xs">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span className="font-bold">{passwordChangeSuccess}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setPasswordChangeSuccess('')}
+                      className="text-xs font-bold underline text-emerald-900 ml-4"
+                    >
+                      Tutup
+                    </button>
+                  </div>
+                )}
+
+                {passwordChangeError && (
+                  <div className="p-4 bg-red-50 border border-red-200 text-red-800 rounded-2xl text-xs flex items-center justify-between shadow-xs">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+                      <span className="font-bold">{passwordChangeError}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setPasswordChangeError('')}
+                      className="text-xs font-bold underline text-red-900 ml-4"
+                    >
+                      Tutup
+                    </button>
+                  </div>
+                )}
+
+                {/* Table of Users */}
+                <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
+                  <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-black text-slate-900 uppercase">
+                        DAFTAR PENGGUNA TERDAFTAR
+                      </h4>
+                      <p className="text-xs text-slate-500">
+                        Akun yang memiliki hak akses pengelolaan pemilihan
+                      </p>
+                    </div>
+                    <span className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-bold">
+                      {adminUsers.length} Akun
+                    </span>
                   </div>
                   <table className="w-full text-left text-xs">
                     <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase">
@@ -2241,26 +2414,237 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         <th className="p-4">Username</th>
                         <th className="p-4">Role</th>
                         <th className="p-4">Terakhir Login</th>
+                        <th className="p-4 text-center">Aksi Cepat</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {adminUsers.map((u) => (
                         <tr key={u.id} className="hover:bg-slate-50">
                           <td className="p-4 font-bold text-slate-900">{u.nama}</td>
-                          <td className="p-4 font-mono">{u.username}</td>
+                          <td className="p-4 font-mono font-bold text-slate-700">{u.username}</td>
                           <td className="p-4">
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                              u.role === 'SUPER_ADMIN' 
+                                ? 'bg-amber-100 text-amber-800 border-amber-300' 
+                                : 'bg-blue-100 text-blue-800 border-blue-300'
+                            }`}>
                               {u.role}
                             </span>
                           </td>
                           <td className="p-4 text-slate-400 font-mono text-[11px]">
                             {u.terakhirLogin ? new Date(u.terakhirLogin).toLocaleTimeString('id-ID') : '-'}
                           </td>
+                          <td className="p-4 text-center">
+                            <button
+                              type="button"
+                              onClick={() => handleResetPasswordDefault(u.id)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-amber-50 text-slate-700 hover:text-amber-800 border border-slate-200 hover:border-amber-300 rounded-xl text-[11px] font-bold transition-all"
+                              title="Reset Password ke Default"
+                            >
+                              <RotateCcw className="w-3 h-3 text-amber-600" />
+                              Reset Default
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  
+                  {/* Card Form Ganti Password */}
+                  <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+                    <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
+                      <div className="p-2 bg-amber-50 text-amber-600 rounded-xl">
+                        <Lock className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-black text-slate-900 uppercase">
+                          GANTI PASSWORD
+                        </h4>
+                        <p className="text-xs text-slate-500">
+                          Ubah kata sandi untuk akun administrator atau panitia
+                        </p>
+                      </div>
+                    </div>
+
+                    <form onSubmit={handleChangePassword} className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                          Pilih Akun yang Akan Dirubah
+                        </label>
+                        <select
+                          value={selectedUserForPassword}
+                          onChange={(e) => setSelectedUserForPassword(e.target.value)}
+                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-amber-500"
+                        >
+                          {adminUsers.map((u) => (
+                            <option key={u.id} value={u.id}>
+                              {u.nama} ({u.username}) - [{u.role}]
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                          Password Saat Ini
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showCurrentPassword ? 'text' : 'password'}
+                            value={currentPasswordInput}
+                            onChange={(e) => setCurrentPasswordInput(e.target.value)}
+                            placeholder="Masukkan password saat ini..."
+                            className="w-full px-4 py-2.5 pr-10 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono outline-none focus:border-amber-500"
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                          >
+                            {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                          Password Baru (Minimal 4 Karakter)
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showNewPassword ? 'text' : 'password'}
+                            value={newPasswordInput}
+                            onChange={(e) => setNewPasswordInput(e.target.value)}
+                            placeholder="Masukkan password baru..."
+                            className="w-full px-4 py-2.5 pr-10 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono outline-none focus:border-amber-500"
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowNewPassword(!showNewPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                          >
+                            {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                          Konfirmasi Password Baru
+                        </label>
+                        <input
+                          type={showNewPassword ? 'text' : 'password'}
+                          value={confirmPasswordInput}
+                          onChange={(e) => setConfirmPasswordInput(e.target.value)}
+                          placeholder="Ketik ulang password baru..."
+                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono outline-none focus:border-amber-500"
+                          required
+                        />
+                      </div>
+
+                      <div className="pt-2">
+                        <button
+                          type="submit"
+                          disabled={isChangingPassword}
+                          className="w-full py-3 bg-amber-500 hover:bg-amber-600 disabled:bg-slate-300 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          {isChangingPassword ? (
+                            <>
+                              <RefreshCw className="w-4 h-4 animate-spin" />
+                              Menyimpan ke Cloud...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="w-4 h-4" />
+                              Simpan Perubahan Password
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+
+                  {/* Card Informasi Kredensial & Reset Cepat */}
+                  <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+                    <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
+                      <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                        <Shield className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-black text-slate-900 uppercase">
+                          RESET PASSWORD KE DEFAULT
+                        </h4>
+                        <p className="text-xs text-slate-500">
+                          Kembalikan kata sandi ke standar awal jika lupa password
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-slate-900 text-xs">Akun Super Administrator:</span>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">SUPER_ADMIN</span>
+                        </div>
+                        <p className="text-xs text-slate-600">
+                          Username: <code className="px-1.5 py-0.5 bg-white border border-slate-300 rounded font-bold text-slate-900">admin</code>
+                        </p>
+                        <p className="text-xs text-slate-600">
+                          Password Default: <code className="px-1.5 py-0.5 bg-white border border-slate-300 rounded font-bold text-amber-700">admin123</code>
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const adminUser = adminUsers.find((u) => u.username === 'admin');
+                            if (adminUser) handleResetPasswordDefault(adminUser.id);
+                          }}
+                          className="mt-2 w-full py-2 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5 text-amber-600" />
+                          Reset Password Admin ke Default (admin123)
+                        </button>
+                      </div>
+
+                      <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-slate-900 text-xs">Akun Panitia Pemilihan:</span>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">PANITIA</span>
+                        </div>
+                        <p className="text-xs text-slate-600">
+                          Username: <code className="px-1.5 py-0.5 bg-white border border-slate-300 rounded font-bold text-slate-900">panitia</code>
+                        </p>
+                        <p className="text-xs text-slate-600">
+                          Password Default: <code className="px-1.5 py-0.5 bg-white border border-slate-300 rounded font-bold text-blue-700">osis2026</code>
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const panitiaUser = adminUsers.find((u) => u.username === 'panitia');
+                            if (panitiaUser) handleResetPasswordDefault(panitiaUser.id);
+                          }}
+                          className="mt-2 w-full py-2 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5 text-blue-600" />
+                          Reset Password Panitia ke Default (osis2026)
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl text-[11px] text-amber-900 space-y-1">
+                      <p className="font-bold">Informasi Sinkronisasi Real-time:</p>
+                      <p className="text-amber-800">
+                        Setiap kali password diganti atau direset ke default, data langsung diperbarui di Firebase Cloud Firestore sehingga berlaku untuk semua perangkat panitia tanpa perlu refresh manual.
+                      </p>
+                    </div>
+                  </div>
+
+                </div>
+
               </div>
             )}
 
