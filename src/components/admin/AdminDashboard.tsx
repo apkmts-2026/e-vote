@@ -834,11 +834,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
             )}
 
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-wider uppercase bg-white/10 text-amber-300 border border-white/15 mb-2 shadow-xs">
-              <Lock className="w-3 h-3 text-amber-400" />
-              AREA TERPROTEKSI
-            </div>
-
             <h2 className="text-2xl font-black tracking-tight text-white drop-shadow-sm">
               LOGIN PANEL ADMIN
             </h2>
@@ -846,7 +841,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               {sekolah.namaSekolah}
             </p>
             <p className="text-[11px] text-slate-300 mt-2 max-w-xs mx-auto leading-relaxed">
-              Area terproteksi khusus Panitia & Pengawas. Masuk dengan akun resmi untuk mengatur calon, DPT, dan hasil suara.
+              Area khusus Panitia & Pengawas. Silahkan masuk dengan akun resmi terdaftar.
             </p>
           </div>
 
