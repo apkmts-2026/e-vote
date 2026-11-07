@@ -28,6 +28,33 @@
   animation: rainbowFlow 14s ease infinite;
 }
 
+.bg-rainbow-dark {
+  background: linear-gradient(
+    135deg,
+    #2c071d 0%,
+    #281000 15%,
+    #1f1b00 30%,
+    #012415 45%,
+    #022135 60%,
+    #0d1140 75%,
+    #23083d 90%,
+    #2c071d 100%
+  );
+  background-size: 300% 300%;
+  animation: rainbowFlow 16s ease infinite;
+}
+
+.card-rainbow-dark {
+  background: rgba(10, 15, 30, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 
+    0 25px 60px -15px rgba(0, 0, 0, 0.85),
+    0 0 50px -10px rgba(139, 92, 246, 0.25),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.2);
+}
+
 @media print {
   body {
     background-color: #ffffff !important;

@@ -798,12 +798,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // 1. LOGIN SCREEN FOR ADMIN IF NOT LOGGED IN
   if (!currentAdmin) {
     return (
-      <main className="min-h-[calc(100vh-5rem)] bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-slate-950/90 border border-amber-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-black/80 text-white relative overflow-hidden backdrop-blur-xl">
+      <main className="min-h-[calc(100vh-5rem)] bg-rainbow-dark flex items-center justify-center p-4 relative overflow-hidden">
+        
+        {/* Floating Dark Rainbow Ambient Glows */}
+        <div className="absolute -top-32 -left-20 w-80 h-80 rounded-full bg-purple-600/25 blur-3xl pointer-events-none animate-pulse" />
+        <div className="absolute top-1/4 -right-24 w-80 h-80 rounded-full bg-pink-600/20 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-28 left-1/4 w-80 h-80 rounded-full bg-teal-500/20 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-1/3 -right-20 w-72 h-72 rounded-full bg-amber-500/20 blur-3xl pointer-events-none" />
+
+        <div className="max-w-md w-full card-rainbow-dark rounded-3xl p-6 sm:p-8 text-white relative z-10 overflow-hidden shadow-2xl">
           
-          {/* Subtle Ambient Glow */}
-          <div className="absolute -top-24 -right-24 w-48 h-48 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
-          <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-yellow-500/10 rounded-full blur-2xl pointer-events-none" />
+          {/* Top Delicate Rainbow Accent Line */}
+          <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-pink-500 via-amber-400 via-emerald-400 to-indigo-500" />
+
+          {/* Subtle Ambient Glows inside card */}
+          <div className="absolute -top-20 -right-20 w-44 h-44 bg-purple-500/15 rounded-full blur-2xl pointer-events-none" />
+          <div className="absolute -bottom-20 -left-20 w-44 h-44 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
 
           {/* Header */}
           <div className="text-center mb-6 relative z-10">
@@ -812,29 +822,37 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <img
                   src={sekolah.logo}
                   alt={sekolah.namaSekolah || 'Logo'}
-                  className="w-16 h-16 object-contain rounded-2xl p-1 bg-white border border-amber-400 shadow-lg shadow-amber-500/20 mx-auto"
+                  className="w-16 h-16 object-contain rounded-2xl p-1 bg-white/95 border border-amber-400 shadow-lg shadow-black/50 mx-auto"
                 />
                 <span className="absolute -bottom-1 -right-1 px-1.5 py-0.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 text-[9px] font-black rounded-md shadow-xs border border-white">
                   OSIS
                 </span>
               </div>
             ) : (
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-500 via-yellow-400 to-amber-600 text-slate-950 flex items-center justify-center mx-auto mb-3 shadow-lg shadow-amber-500/30 font-black text-xl border border-amber-300">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-500 via-yellow-400 to-amber-600 text-slate-950 flex items-center justify-center mx-auto mb-3 shadow-lg shadow-black/50 font-black text-xl border border-amber-300">
                 OSIS
               </div>
             )}
-            <h2 className="text-2xl font-black tracking-tight text-white">LOGIN PANEL ADMIN</h2>
+
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-wider uppercase bg-white/10 text-amber-300 border border-white/15 mb-2 shadow-xs">
+              <Lock className="w-3 h-3 text-amber-400" />
+              AREA TERPROTEKSI
+            </div>
+
+            <h2 className="text-2xl font-black tracking-tight text-white drop-shadow-sm">
+              LOGIN PANEL ADMIN
+            </h2>
             <p className="text-xs text-amber-400 mt-1 uppercase tracking-wider font-bold">
               {sekolah.namaSekolah}
             </p>
-            <p className="text-[11px] text-slate-400 mt-2 max-w-xs mx-auto leading-relaxed">
+            <p className="text-[11px] text-slate-300 mt-2 max-w-xs mx-auto leading-relaxed">
               Area terproteksi khusus Panitia & Pengawas. Masuk dengan akun resmi untuk mengatur calon, DPT, dan hasil suara.
             </p>
           </div>
 
           {/* Error Banner */}
           {loginError && (
-            <div className="mb-5 p-3.5 bg-red-950/70 border border-red-700/80 text-red-200 rounded-2xl text-xs flex items-start gap-2.5 shadow-sm">
+            <div className="mb-5 p-3.5 bg-red-950/80 border border-red-500/60 text-red-200 rounded-2xl text-xs flex items-start gap-2.5 shadow-md">
               <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
               <span>{loginError}</span>
             </div>
@@ -843,7 +861,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           {/* Login Form */}
           <form onSubmit={handleAdminLogin} className="space-y-4 relative z-10">
             <div>
-              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1.5">
                 Username Admin
               </label>
               <div className="relative">
@@ -851,7 +869,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   type="text"
                   value={loginUsername}
                   onChange={(e) => setLoginUsername(e.target.value)}
-                  className="w-full px-4 py-3 pl-11 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm focus:border-amber-400 focus:ring-1 focus:ring-amber-400 outline-none transition-all placeholder:text-slate-500 font-medium"
+                  className="w-full px-4 py-3 pl-11 rounded-xl bg-slate-900/90 border border-slate-700/80 text-white text-sm focus:border-amber-400 focus:bg-slate-900 focus:ring-2 focus:ring-amber-400/20 outline-none transition-all placeholder:text-slate-400 font-medium shadow-inner"
                   placeholder="Masukkan username admin"
                   autoComplete="username"
                   autoFocus
@@ -863,7 +881,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider">
                   Password
                 </label>
               </div>
@@ -872,7 +890,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   type={showPassword ? 'text' : 'password'}
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
-                  className="w-full px-4 py-3 pl-11 pr-11 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm focus:border-amber-400 focus:ring-1 focus:ring-amber-400 outline-none transition-all placeholder:text-slate-500 font-medium"
+                  className="w-full px-4 py-3 pl-11 pr-11 rounded-xl bg-slate-900/90 border border-slate-700/80 text-white text-sm focus:border-amber-400 focus:bg-slate-900 focus:ring-2 focus:ring-amber-400/20 outline-none transition-all placeholder:text-slate-400 font-medium shadow-inner"
                   placeholder="Masukkan password admin"
                   autoComplete="current-password"
                   required
@@ -881,7 +899,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 rounded transition-colors"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 rounded transition-colors cursor-pointer"
                   title={showPassword ? 'Sembunyikan password' : 'Lihat password'}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -891,7 +909,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             <button
               type="submit"
-              className="w-full py-3.5 mt-2 bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-slate-950 font-black rounded-xl text-sm shadow-lg shadow-amber-500/25 transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-3.5 mt-2 bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-slate-950 font-black rounded-xl text-sm shadow-xl shadow-amber-500/25 transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
             >
               <Shield className="w-4 h-4 text-slate-950" />
               MASUK KE PANEL ADMIN
@@ -901,7 +919,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <button
                 type="button"
                 onClick={onBackToHome}
-                className="w-full py-2.5 text-xs font-bold text-slate-400 hover:text-white transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                className="w-full py-2.5 text-xs font-bold text-slate-300 hover:text-white transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 Kembali ke Bilik Suara Siswa
@@ -910,12 +928,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </form>
 
           {/* Security Notice */}
-          <div className="mt-6 pt-4 border-t border-slate-800/80 text-[11px] text-slate-400 text-center space-y-1 relative z-10">
-            <p className="flex items-center justify-center gap-1 text-slate-300 font-semibold">
+          <div className="mt-6 pt-4 border-t border-white/10 text-[11px] text-slate-300 text-center space-y-1 relative z-10">
+            <p className="flex items-center justify-center gap-1 text-slate-200 font-semibold">
               <Lock className="w-3.5 h-3.5 text-amber-400" />
               Proteksi Akses E-Pemilihan Ketua OSIS
             </p>
-            <p className="text-[10px] text-slate-500">
+            <p className="text-[10px] text-slate-400">
               Mencegah pengubahan data calon dan rekap suara oleh pihak yang tidak berwenang.
             </p>
           </div>
