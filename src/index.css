@@ -70,13 +70,15 @@
   /* When modal printing is active, collapse #root completely so page 1 is NEVER blank */
   body.has-print-modal #root,
   body:has(#kartu-pemilih-portal) #root,
-  body:has(#berita-acara-portal) #root {
+  body:has(#berita-acara-portal) #root,
+  body:has(#absensi-pemilih-portal) #root {
     display: none !important;
   }
 
   /* Reset portal container in print so it flows naturally from top of page 1 */
   #kartu-pemilih-portal,
-  #berita-acara-portal {
+  #berita-acara-portal,
+  #absensi-pemilih-portal {
     position: static !important;
     display: block !important;
     width: 100% !important;
@@ -91,7 +93,8 @@
 
   /* Ensure the printable area has no borders, margins, or clipping */
   #print-kartu-area,
-  #print-area {
+  #print-area,
+  #print-absensi-area {
     position: static !important;
     display: block !important;
     width: 100% !important;
@@ -105,6 +108,15 @@
     background: #ffffff !important;
     color: #000000 !important;
     overflow: visible !important;
+  }
+
+  /* Repeat table headers on multi-page printouts */
+  thead {
+    display: table-header-group !important;
+  }
+  tr {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
   }
 
   /* Hide headers, toolbars, buttons, and anything marked print:hidden */

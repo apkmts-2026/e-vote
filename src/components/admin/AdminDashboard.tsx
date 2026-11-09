@@ -56,6 +56,7 @@ import {
 import { GAS_FILES, GasFile } from '../../utils/gasCode';
 import { BeritaAcaraModal } from '../reports/BeritaAcaraModal';
 import { KartuPemilihModal } from '../reports/KartuPemilihModal';
+import { AbsensiPemilihModal } from '../reports/AbsensiPemilihModal';
 
 interface AdminDashboardProps {
   sekolah: PengaturanSekolah;
@@ -167,10 +168,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [importNotification, setImportNotification] = useState<string>('');
 
-  // Hasil, Berita Acara & Kartu Pemilih
+  // Hasil, Berita Acara, Kartu Pemilih & Absensi
   const [beritaAcaraOpen, setBeritaAcaraOpen] = useState<boolean>(false);
   const [confirmUnlockModal, setConfirmUnlockModal] = useState<boolean>(false);
   const [kartuPemilihModalOpen, setKartuPemilihModalOpen] = useState<boolean>(false);
+  const [absensiModalOpen, setAbsensiModalOpen] = useState<boolean>(false);
   const [singlePemilihToPrint, setSinglePemilihToPrint] = useState<Pemilih | null>(null);
 
   // Settings Forms
@@ -1443,6 +1445,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
                 <button
                   type="button"
+                  onClick={() => {
+                    if (pemilihList.length === 0) {
+                      showToast('Daftar DPT Pemilih masih kosong. Silakan import atau tambah siswa terlebih dahulu.', 'info');
+                      return;
+                    }
+                    setAbsensiModalOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl text-xs font-black shadow-xs shadow-emerald-600/20 cursor-pointer"
+                  title="Cetak Lembar Absensi / Daftar Hadir Pemilih Resmi (Model C-Daftar Hadir DPT)"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-white" />
+                  Cetak Absensi DPT
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => setPemilihModalOpen(true)}
                   className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer"
                 >
@@ -1725,6 +1743,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   >
                     <Download className="w-3.5 h-3.5 text-emerald-600" />
                     Download Excel Hasil
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (pemilihList.length === 0) {
+                        showToast('Daftar DPT Pemilih masih kosong.', 'info');
+                        return;
+                      }
+                      setAbsensiModalOpen(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 rounded-xl text-xs font-bold shadow-xs cursor-pointer"
+                    title="Cetak Lembar Daftar Hadir / Absensi Pemilih (Model C-DPT)"
+                  >
+                    <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                    Daftar Hadir Pemilih
                   </button>
 
                   <button
@@ -3226,6 +3260,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         pemilihan={pemilihan}
         pemilihList={pemilihList}
         singlePemilih={singlePemilihToPrint}
+      />
+
+      {/* MODAL: LEMBAR DAFTAR HADIR / ABSENSI PEMILIH (MODEL C-DPT) */}
+      <AbsensiPemilihModal
+        isOpen={absensiModalOpen}
+        onClose={() => setAbsensiModalOpen(false)}
+        sekolah={sekolah}
+        pemilihan={pemilihan}
+        pemilihList={pemilihList}
       />
 
       {/* IN-APP TOAST NOTIFICATION (REPLACING WINDOW.ALERT) */}
