@@ -285,7 +285,49 @@ export function runFullQCAudit() {
   );
 
   // -------------------------------------------------------------
-  // TAHAP 8: HASIL PERHITUNGAN DAN PERSENTASE (EDGE CASES)
+  // TAHAP 8: TESTING IMPORT MASSAL 71 SISWA & RESOLUSI DUPLIKAT
+  // -------------------------------------------------------------
+  const roster71: Omit<Pemilih, 'id' | 'statusMemilih' | 'waktuMemilih'>[] = [];
+  for (let i = 1; i <= 71; i++) {
+    roster71.push({
+      nisNisn: `NIS-2026-${String(i).padStart(3, '0')}`,
+      nama: `Siswa Uji Ke-${i}`,
+      kelas: i <= 24 ? 'VII-A' : i <= 47 ? 'VIII-B' : 'IX-C',
+      kodePemilih: `KLS-${i}`,
+    });
+  }
+
+  // Test OVERWRITE with 71 students
+  const import71Result = StorageService.importPemilihBulk(roster71, 'test-runner', 'OVERWRITE');
+  assert(
+    'Import 71 Siswa',
+    'Import 71 siswa lengkap dengan mode OVERWRITE',
+    import71Result.added === 71 && import71Result.totalActiveDPT === 71,
+    'Seluruh 71 siswa berhasil diimpor tanpa ada yang terpotong',
+    `Ditambahkan: ${import71Result.added}, Total DPT: ${import71Result.totalActiveDPT}`
+  );
+
+  // Test token collision safety: add voter with identical token
+  const collisionCandidate = [
+    {
+      nisNisn: 'NIS-BARU-999',
+      nama: 'Siswa Pengetesan Token Kembar',
+      kelas: 'VII-A',
+      kodePemilih: 'KLS-1', // existing token
+    }
+  ];
+  const collisionResult = StorageService.importPemilihBulk(collisionCandidate, 'test-runner', 'SKIP_DUPLICATES');
+  const storedCandidate = StorageService.getPemilih().find(p => p.nisNisn === 'NIS-BARU-999');
+  assert(
+    'Import Token Safety',
+    'Siswa tidak dibuang saat token bentrok (token baru digenerate)',
+    collisionResult.added === 1 && Boolean(storedCandidate) && storedCandidate?.kodePemilih !== 'KLS-1',
+    'Siswa tetap tersimpan dan token unik baru dibuatkan secara otomatis',
+    `Status ditambah: ${collisionResult.added}, Token baru: ${storedCandidate?.kodePemilih}`
+  );
+
+  // -------------------------------------------------------------
+  // TAHAP 9: HASIL PERHITUNGAN DAN PERSENTASE (EDGE CASES)
   // -------------------------------------------------------------
   const totalDptCount = 0;
   const pctZeroDpt = totalDptCount > 0 ? ((1 / totalDptCount) * 100).toFixed(1) : '0';
@@ -296,6 +338,7 @@ export function runFullQCAudit() {
     'Persentase bernilai 0 dan tidak menghasilkan NaN atau error pembagian nol',
     `Hasil persentase: ${pctZeroDpt}%`
   );
+
 
   console.log('\n================================================================');
   console.log(`TOTAL PENGUJIAN: ${results.length}`);

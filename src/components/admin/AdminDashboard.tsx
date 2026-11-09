@@ -50,6 +50,9 @@ import { CloudService } from '../../utils/firebase';
 import {
   downloadExcelTemplate,
   parseExcelPemilih,
+  parseExcelPemilihDetailed,
+  ParseExcelResult,
+  ParsedPemilihRow,
   exportPemilihToExcel,
   exportHasilToExcel,
 } from '../../utils/excel';
@@ -57,6 +60,7 @@ import { GAS_FILES, GasFile } from '../../utils/gasCode';
 import { BeritaAcaraModal } from '../reports/BeritaAcaraModal';
 import { KartuPemilihModal } from '../reports/KartuPemilihModal';
 import { AbsensiPemilihModal } from '../reports/AbsensiPemilihModal';
+import { ImportPreviewModal } from './ImportPreviewModal';
 
 interface AdminDashboardProps {
   sekolah: PengaturanSekolah;
@@ -174,6 +178,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [kartuPemilihModalOpen, setKartuPemilihModalOpen] = useState<boolean>(false);
   const [absensiModalOpen, setAbsensiModalOpen] = useState<boolean>(false);
   const [singlePemilihToPrint, setSinglePemilihToPrint] = useState<Pemilih | null>(null);
+
+  // Import Preview & Diagnostics
+  const [importPreviewOpen, setImportPreviewOpen] = useState<boolean>(false);
+  const [parseResultData, setParseResultData] = useState<ParseExcelResult | null>(null);
+  const [uploadedFileName, setUploadedFileName] = useState<string>('');
 
   // Settings Forms
   const [schoolSettingsForm, setSchoolSettingsForm] = useState<PengaturanSekolah>(sekolah);
@@ -553,33 +562,67 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     onDataChange();
   };
 
-  // Handle Excel File Upload
+  // Handle Excel File Upload & Open Diagnostic Preview Modal
   const handleExcelImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     try {
-      const list = await parseExcelPemilih(file);
-      if (list.length === 0) {
-        setImportNotification('Tidak ditemukan data siswa valid pada file Excel tersebut.');
+      const result = await parseExcelPemilihDetailed(file);
+      if (result.validPemilih.length === 0) {
+        showToast(
+          `Tidak ditemukan data siswa yang dapat dibaca pada file "${file.name}". Pastikan file memiliki kolom Nama Siswa.`,
+          'error'
+        );
         return;
       }
-      const res = StorageService.importPemilihBulk(list, currentAdmin?.username || 'admin');
-      
-      // Sync all DPT to Cloud
-      CloudService.importPemilihBulkCloud(StorageService.getPemilih());
 
-      setImportNotification(
-        `Import Excel Berhasil! ${res.added} pemilih baru ditambahkan, ${res.skipped} dilewati (duplikat). Data otomatis tersinkronisasi ke Cloud.`
-      );
-      onDataChange();
-    } catch (err) {
+      setUploadedFileName(file.name);
+      setParseResultData(result);
+      setImportPreviewOpen(true);
+    } catch (err: any) {
       console.error(err);
-      setImportNotification('Gagal membaca file Excel. Pastikan format kolom sesuai template.');
+      showToast(`Gagal membaca file Excel: ${err?.message || 'Format tidak didukung'}.`, 'error');
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
+
+  // Execute Import after user confirmation in Diagnostic Modal
+  const handleConfirmImportExecution = async (mode: 'OVERWRITE' | 'MERGE' | 'SKIP_DUPLICATES') => {
+    if (!parseResultData) return;
+
+    const votersToImport = parseResultData.validPemilih.map((p: ParsedPemilihRow) => ({
+      nisNisn: p.nisNisn,
+      nama: p.nama,
+      kelas: p.kelas,
+      kodePemilih: p.kodePemilih,
+    }));
+
+    // If OVERWRITE: delete all old voters in cloud before syncing new
+    if (mode === 'OVERWRITE') {
+      await CloudService.deleteAllPemilihCloud();
+    }
+
+    const res = StorageService.importPemilihBulk(
+      votersToImport,
+      currentAdmin?.username || 'admin',
+      mode
+    );
+
+    // Sync all new/updated DPT to Cloud
+    await CloudService.importPemilihBulkCloud(StorageService.getPemilih());
+
+    setImportPreviewOpen(false);
+    setParseResultData(null);
+    onDataChange();
+
+    showToast(
+      `✓ Import Berhasil! ${res.added} siswa baru ditambahkan${res.updated > 0 ? `, ${res.updated} diperbarui` : ''}. Total DPT resmi: ${res.totalActiveDPT} Siswa. Data otomatis tersinkronisasi ke Cloud.`,
+      'success'
+    );
+  };
+
 
   // Reset Individual Voter Status
   const handleResetVoter = (id: string, nama: string) => {
@@ -3269,6 +3312,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         sekolah={sekolah}
         pemilihan={pemilihan}
         pemilihList={pemilihList}
+      />
+
+      {/* MODAL: PRATINJAU & DIAGNOSTIK IMPORT EXCEL DPT */}
+      <ImportPreviewModal
+        isOpen={importPreviewOpen}
+        onClose={() => {
+          setImportPreviewOpen(false);
+          setParseResultData(null);
+        }}
+        parseResult={parseResultData}
+        fileName={uploadedFileName}
+        onConfirmImport={handleConfirmImportExecution}
+        currentDptCount={pemilihList.length}
       />
 
       {/* IN-APP TOAST NOTIFICATION (REPLACING WINDOW.ALERT) */}

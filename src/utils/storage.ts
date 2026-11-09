@@ -253,32 +253,124 @@ export const StorageService = {
     setStorage(STORAGE_KEYS.SUARA, []);
     this.addAuditLog(actor, 'Kosongkan DPT Permanen', 'Semua data DPT pemilih dan suara telah dikosongkan secara permanen');
   },
-  importPemilihBulk(newList: Omit<Pemilih, 'id' | 'statusMemilih' | 'waktuMemilih'>[], actor: string = 'admin'): { added: number; skipped: number } {
-    const current = this.getPemilih();
-    const existingTokens = new Set(current.map((p) => p.kodePemilih.toUpperCase()));
-    const existingNis = new Set(current.map((p) => p.nisNisn.trim()));
+  importPemilihBulk(
+    newList: Omit<Pemilih, 'id' | 'statusMemilih' | 'waktuMemilih'>[],
+    actor: string = 'admin',
+    mode: 'OVERWRITE' | 'MERGE' | 'SKIP_DUPLICATES' = 'OVERWRITE'
+  ): {
+    added: number;
+    updated: number;
+    skipped: number;
+    skippedDetails: { nama: string; nisNisn: string; reason: string }[];
+    totalActiveDPT: number;
+  } {
+    let current = mode === 'OVERWRITE' ? [] : [...this.getPemilih()];
+    const existingTokens = new Set<string>(current.map((p) => p.kodePemilih.toUpperCase()));
+    const existingNisMap = new Map<string, Pemilih>(current.map((p) => [p.nisNisn.trim(), p]));
 
     let added = 0;
+    let updated = 0;
     let skipped = 0;
+    const skippedDetails: { nama: string; nisNisn: string; reason: string }[] = [];
+
+    // Helper to generate a collision-free token
+    const getCollisionFreeToken = (preferredToken: string, kelas: string): string => {
+      let token = preferredToken.toUpperCase();
+      if (token && !existingTokens.has(token)) {
+        existingTokens.add(token);
+        return token;
+      }
+      const cleanKelas = (kelas || 'OSIS').replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase();
+      const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+      let attempts = 0;
+      do {
+        let rand = '';
+        for (let i = 0; i < 5; i++) {
+          rand += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        token = `${cleanKelas}-${rand}`;
+        attempts++;
+      } while (existingTokens.has(token) && attempts < 100);
+
+      existingTokens.add(token);
+      return token;
+    };
 
     for (const item of newList) {
-      if (existingTokens.has(item.kodePemilih.toUpperCase()) || existingNis.has(item.nisNisn.trim())) {
-        skipped++;
-        continue;
+      const cleanNis = item.nisNisn.trim();
+
+      if (mode === 'OVERWRITE') {
+        const uniqueToken = getCollisionFreeToken(item.kodePemilih, item.kelas);
+        current.push({
+          ...item,
+          nisNisn: cleanNis,
+          kodePemilih: uniqueToken,
+          id: `pemilih-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+          statusMemilih: false,
+        });
+        existingNisMap.set(cleanNis, current[current.length - 1]);
+        added++;
+      } else if (mode === 'MERGE') {
+        const existing = existingNisMap.get(cleanNis);
+        if (existing) {
+          // Update existing voter data
+          existing.nama = item.nama;
+          existing.kelas = item.kelas;
+          updated++;
+        } else {
+          // Add new voter
+          const uniqueToken = getCollisionFreeToken(item.kodePemilih, item.kelas);
+          const newVoter: Pemilih = {
+            ...item,
+            nisNisn: cleanNis,
+            kodePemilih: uniqueToken,
+            id: `pemilih-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+            statusMemilih: false,
+          };
+          current.push(newVoter);
+          existingNisMap.set(cleanNis, newVoter);
+          added++;
+        }
+      } else {
+        // SKIP_DUPLICATES
+        if (existingNisMap.has(cleanNis)) {
+          skipped++;
+          skippedDetails.push({
+            nama: item.nama,
+            nisNisn: cleanNis,
+            reason: `NIS/NISN ${cleanNis} sudah terdaftar sebelumnya di DPT`,
+          });
+          continue;
+        }
+
+        const uniqueToken = getCollisionFreeToken(item.kodePemilih, item.kelas);
+        const newVoter: Pemilih = {
+          ...item,
+          nisNisn: cleanNis,
+          kodePemilih: uniqueToken,
+          id: `pemilih-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+          statusMemilih: false,
+        };
+        current.push(newVoter);
+        existingNisMap.set(cleanNis, newVoter);
+        added++;
       }
-      current.push({
-        ...item,
-        id: `pemilih-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
-        statusMemilih: false,
-      });
-      existingTokens.add(item.kodePemilih.toUpperCase());
-      existingNis.add(item.nisNisn.trim());
-      added++;
     }
 
     this.savePemilih(current, actor);
-    this.addAuditLog(actor, 'Import Pemilih', `Import Excel: berhasil ${added}, duplikat/dilewati ${skipped}`);
-    return { added, skipped };
+    this.addAuditLog(
+      actor,
+      'Import Pemilih Bulk',
+      `Mode: ${mode} - Berhasil ditambah: ${added}, Diperbarui: ${updated}, Dilewati: ${skipped}. Total DPT sekarang: ${current.length}`
+    );
+
+    return {
+      added,
+      updated,
+      skipped,
+      skippedDetails,
+      totalActiveDPT: current.length,
+    };
   },
   resetPemilihStatus(id: string, actor: string = 'admin'): void {
     // Reset status voting for a specific voter
