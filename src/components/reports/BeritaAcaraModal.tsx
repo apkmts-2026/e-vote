@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Printer, Download, X, CheckCircle, ShieldCheck } from 'lucide-react';
 import { Calon, Pemilih, Suara, PengaturanSekolah, PengaturanPemilihan } from '../../types';
 
@@ -21,6 +22,15 @@ export const BeritaAcaraModal: React.FC<BeritaAcaraModalProps> = ({
   pemilihList,
   suaraList,
 }) => {
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('has-print-modal');
+      return () => {
+        document.body.classList.remove('has-print-modal');
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const totalDPT = pemilihList.length;
@@ -55,8 +65,11 @@ export const BeritaAcaraModal: React.FC<BeritaAcaraModalProps> = ({
     year: 'numeric',
   });
 
-  return (
-    <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-y-auto print:static print:p-0 print:m-0 print:bg-white print:overflow-visible">
+  return createPortal(
+    <div
+      id="berita-acara-portal"
+      className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-y-auto print:static print:p-0 print:m-0 print:bg-white print:overflow-visible"
+    >
       <div className="bg-white rounded-3xl max-w-4xl w-full p-4 sm:p-8 shadow-2xl border border-slate-200 my-4 max-h-[95vh] flex flex-col print:border-none print:shadow-none print:rounded-none print:p-0 print:m-0 print:max-h-none print:overflow-visible print:w-full print:max-w-none">
         
         {/* Modal Top Actions */}
@@ -258,6 +271,7 @@ export const BeritaAcaraModal: React.FC<BeritaAcaraModalProps> = ({
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

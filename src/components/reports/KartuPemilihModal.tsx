@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Printer,
   X,
@@ -34,6 +35,15 @@ export const KartuPemilihModal: React.FC<KartuPemilihModalProps> = ({
   );
   const [paperSize, setPaperSize] = useState<'A4' | 'FOLIO'>('A4');
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('has-print-modal');
+      return () => {
+        document.body.classList.remove('has-print-modal');
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   // Class list for filtering
@@ -50,8 +60,11 @@ export const KartuPemilihModal: React.FC<KartuPemilihModalProps> = ({
     window.print();
   };
 
-  return (
-    <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-y-auto print:static print:p-0 print:m-0 print:bg-white print:overflow-visible">
+  return createPortal(
+    <div
+      id="kartu-pemilih-portal"
+      className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-y-auto print:static print:p-0 print:m-0 print:bg-white print:overflow-visible"
+    >
       <div className="bg-white rounded-3xl max-w-5xl w-full p-4 sm:p-6 shadow-2xl border border-slate-200 my-4 max-h-[96vh] flex flex-col print:border-none print:shadow-none print:rounded-none print:p-0 print:m-0 print:max-h-none print:overflow-visible print:w-full print:max-w-none">
         
         {/* Modal Controls (Hidden during print) */}
@@ -265,6 +278,7 @@ export const KartuPemilihModal: React.FC<KartuPemilihModalProps> = ({
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
