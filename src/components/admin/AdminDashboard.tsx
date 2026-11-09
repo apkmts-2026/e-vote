@@ -55,6 +55,7 @@ import {
 } from '../../utils/excel';
 import { GAS_FILES, GasFile } from '../../utils/gasCode';
 import { BeritaAcaraModal } from '../reports/BeritaAcaraModal';
+import { KartuPemilihModal } from '../reports/KartuPemilihModal';
 
 interface AdminDashboardProps {
   sekolah: PengaturanSekolah;
@@ -166,9 +167,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [importNotification, setImportNotification] = useState<string>('');
 
-  // Hasil & Berita Acara
+  // Hasil, Berita Acara & Kartu Pemilih
   const [beritaAcaraOpen, setBeritaAcaraOpen] = useState<boolean>(false);
   const [confirmUnlockModal, setConfirmUnlockModal] = useState<boolean>(false);
+  const [kartuPemilihModalOpen, setKartuPemilihModalOpen] = useState<boolean>(false);
+  const [singlePemilihToPrint, setSinglePemilihToPrint] = useState<Pemilih | null>(null);
 
   // Settings Forms
   const [schoolSettingsForm, setSchoolSettingsForm] = useState<PengaturanSekolah>(sekolah);
@@ -1423,8 +1426,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
                 <button
                   type="button"
+                  onClick={() => {
+                    if (pemilihList.length === 0) {
+                      showToast('Daftar DPT Pemilih masih kosong. Silakan import atau tambah siswa terlebih dahulu.', 'info');
+                      return;
+                    }
+                    setSinglePemilihToPrint(null);
+                    setKartuPemilihModalOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-slate-950 rounded-xl text-xs font-black shadow-xs shadow-amber-500/20 cursor-pointer"
+                  title="Cetak Kartu Pemilih A4 / Folio (Print All DPT atau per Kelas)"
+                >
+                  <Printer className="w-3.5 h-3.5 text-slate-950" />
+                  Cetak Kartu Pemilih ({pemilihList.length})
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => setPemilihModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow-xs"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   Input Manual
@@ -1536,6 +1556,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         </td>
                         <td className="p-4 text-center">
                           <div className="flex items-center justify-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSinglePemilihToPrint(p);
+                                setKartuPemilihModalOpen(true);
+                              }}
+                              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg cursor-pointer transition-colors"
+                              title={`Cetak Kartu Pemilih untuk ${p.nama} (${p.kelas})`}
+                            >
+                              <Printer className="w-3.5 h-3.5" />
+                            </button>
                             {p.statusMemilih && (
                               <button
                                 type="button"
@@ -3182,6 +3213,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         calonList={calonList}
         pemilihList={pemilihList}
         suaraList={suaraList}
+      />
+
+      {/* MODAL: CETAK KARTU PEMILIH (A4 / FOLIO) */}
+      <KartuPemilihModal
+        isOpen={kartuPemilihModalOpen}
+        onClose={() => {
+          setKartuPemilihModalOpen(false);
+          setSinglePemilihToPrint(null);
+        }}
+        sekolah={sekolah}
+        pemilihan={pemilihan}
+        pemilihList={pemilihList}
+        singlePemilih={singlePemilihToPrint}
       />
 
       {/* IN-APP TOAST NOTIFICATION (REPLACING WINDOW.ALERT) */}

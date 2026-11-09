@@ -1090,10 +1090,13 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
             <p class="text-xs text-slate-500">Kelola data siswa pemilih, cetak kartu token PIN, dan pantau status hak suara.</p>
           </div>
           <div class="flex flex-wrap gap-2">
+            <button onclick="handlePrintKartuMassalGAS()" class="px-3.5 py-2 bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 text-slate-950 font-black text-xs uppercase rounded-xl shadow-md">
+              🖨️ Cetak Kartu Pemilih
+            </button>
             <button onclick="handleGenerateTokenMassal()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl transition-all">
               🔑 Generate Token Massal
             </button>
-            <button onclick="openModalTambahPemilih()" class="px-4 py-2 bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 text-slate-950 font-black text-xs uppercase rounded-xl shadow-md">
+            <button onclick="openModalTambahPemilih()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs uppercase rounded-xl shadow-md">
               + Tambah Siswa
             </button>
           </div>
@@ -1860,6 +1863,7 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
           </td>
           <td class="p-3.5 font-mono text-[11px] text-slate-400">\${p.waktuMemilih ? new Date(p.waktuMemilih).toLocaleTimeString('id-ID') : '-'}</td>
           <td class="p-3.5 text-right space-x-1">
+            <button onclick="handlePrintKartuGAS('\${p.id}')" class="px-2 py-1 text-blue-600 hover:text-blue-800 text-xs font-bold" title="Cetak Kartu Siswa">🖨️</button>
             \${p.statusMemilih ? \`
               <button onclick="handleResetHakSuaraGAS('\${p.id}')" class="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-lg text-[10px] font-bold">
                 Reset
@@ -1916,6 +1920,88 @@ const INDEX_HTML_CONTENT = `<!DOCTYPE html>
         alert('Berhasil membuat ' + (res ? res.count : 0) + ' token pemilih.');
         refreshDataGAS();
       });
+    }
+
+    function handlePrintKartuGAS(id) {
+      const p = (appState.pemilihList || []).find(x => String(x.id) === String(id));
+      if (!p) return;
+      printCardsHTML([p]);
+    }
+
+    function handlePrintKartuMassalGAS() {
+      const fKelas = (document.getElementById('dpt-filter-kelas') ? document.getElementById('dpt-filter-kelas').value : 'ALL');
+      let list = appState.pemilihList || [];
+      if (fKelas !== 'ALL') list = list.filter(p => p.kelas.startsWith(fKelas));
+      if (!list.length) {
+        alert('Tidak ada data pemilih untuk dicetak.');
+        return;
+      }
+      printCardsHTML(list);
+    }
+
+    function printCardsHTML(voters) {
+      const sek = appState.sekolah || {};
+      const pem = appState.pemilihan || {};
+      const printWin = window.open('', '_blank');
+      if (!printWin) {
+        alert('Izinkan popup di browser Anda untuk mencetak kartu pemilih.');
+        return;
+      }
+      const cards = voters.map((v, i) => \`
+        <div style="border: 2px dashed #94a3b8; border-radius: 12px; padding: 14px; page-break-inside: avoid; break-inside: avoid; font-family: sans-serif; background: #ffffff; min-height: 190px; display: flex; flex-direction: column; justify-content: space-between; position: relative;">
+          <div style="display: flex; align-items: center; gap: 8px; border-bottom: 2px solid #0f172a; padding-bottom: 8px; margin-bottom: 8px;">
+            \${sek.logo ? '<img src="' + sek.logo + '" style="width: 38px; height: 38px; object-fit: contain; border-radius: 6px; border: 1px solid #e2e8f0; padding: 2px;" />' : '<div style="width: 38px; height: 38px; background: #f59e0b; color: #000; font-weight: 900; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 11px;">OSIS</div>'}
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-size: 10px; font-weight: 900; text-transform: uppercase; color: #0f172a;">KARTU PEMILIH DIGITAL (DPT)</div>
+              <div style="font-size: 9px; font-weight: bold; color: #334155;">\${sek.namaSekolah || 'MADRASAH / SEKOLAH'}</div>
+              <div style="font-size: 8px; color: #64748b;">\${pem.namaKegiatan || 'PILKETOS'} • TP \${pem.tahunPelajaran || '2026/2027'}</div>
+            </div>
+          </div>
+          <div style="margin-bottom: 6px;">
+            <div style="font-size: 8px; color: #64748b; font-weight: bold; text-transform: uppercase;">NAMA SISWA:</div>
+            <div style="font-size: 12px; font-weight: 900; text-transform: uppercase; color: #0f172a; line-height: 1.2;">\${v.nama}</div>
+            <div style="display: flex; justify-content: space-between; margin-top: 4px; font-size: 10px;">
+              <span>NISN: <b>\${v.nisNisn}</b></span>
+              <span>KELAS: <b>\${v.kelas}</b></span>
+            </div>
+          </div>
+          <div style="background: #fffbeb; border: 2px solid #f59e0b; border-radius: 8px; padding: 6px; text-align: center; margin-bottom: 6px;">
+            <div style="font-size: 8px; font-weight: 900; color: #78350f; text-transform: uppercase;">KODE TOKEN / PIN BILIK SUARA</div>
+            <div style="font-family: monospace; font-size: 16px; font-weight: 900; letter-spacing: 2px; color: #0f172a;">\${v.kodePemilih}</div>
+          </div>
+          <div style="border-top: 1px solid #e2e8f0; padding-top: 4px; display: flex; justify-content: space-between; font-size: 8px; color: #64748b;">
+            <span>* Masukkan NISN & Token di bilik suara</span>
+            <span style="font-weight: bold; border: 1px solid #cbd5e1; padding: 1px 4px; border-radius: 4px;">🔒 RAHASIA</span>
+          </div>
+        </div>
+      \`).join('');
+
+      printWin.document.write(\`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Cetak Kartu Pemilih OSIS - A4 / Folio</title>
+          <style>
+            @page { size: A4 portrait; margin: 8mm; }
+            body { margin: 0; padding: 8px; font-family: sans-serif; background: #fff; }
+            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+            @media print {
+              .no-print { display: none !important; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="no-print" style="margin-bottom: 12px; padding: 10px 14px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 12px; font-weight: bold; color: #0f172a;">Format Kertas: A4 / Folio (F4) 2 Kolom • Total \${voters.length} Kartu Pemilih</span>
+            <button onclick="window.print()" style="padding: 7px 18px; background: #f59e0b; color: #000; border: none; font-weight: 900; border-radius: 8px; cursor: pointer;">🖨️ Cetak / Simpan PDF</button>
+          </div>
+          <div class="grid">
+            \${cards}
+          </div>
+        </body>
+        </html>
+      \`);
+      printWin.document.close();
     }
 
     // -------------------------------------------------------------
