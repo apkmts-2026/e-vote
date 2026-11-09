@@ -56,8 +56,8 @@ export const BeritaAcaraModal: React.FC<BeritaAcaraModalProps> = ({
   });
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
-      <div className="bg-white rounded-3xl max-w-4xl w-full p-4 sm:p-8 shadow-2xl border border-slate-200 my-4 max-h-[95vh] flex flex-col">
+    <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-y-auto print:static print:p-0 print:m-0 print:bg-white print:overflow-visible">
+      <div className="bg-white rounded-3xl max-w-4xl w-full p-4 sm:p-8 shadow-2xl border border-slate-200 my-4 max-h-[95vh] flex flex-col print:border-none print:shadow-none print:rounded-none print:p-0 print:m-0 print:max-h-none print:overflow-visible print:w-full print:max-w-none">
         
         {/* Modal Top Actions */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-200 mb-4 print:hidden">
@@ -87,7 +87,7 @@ export const BeritaAcaraModal: React.FC<BeritaAcaraModalProps> = ({
         </div>
 
         {/* Printable Document Sheet */}
-        <div id="print-area" className="flex-1 overflow-y-auto p-4 sm:p-8 border border-slate-200 rounded-2xl bg-white text-slate-900 font-serif">
+        <div id="print-area" className="flex-1 overflow-y-auto p-4 sm:p-8 border border-slate-200 rounded-2xl bg-white text-slate-900 font-serif print:border-none print:p-0 print:m-0 print:overflow-visible print:max-h-none print:w-full">
           
           {/* Kop Surat Sekolah */}
           <div className="flex items-center gap-4 border-b-4 border-double border-slate-900 pb-4 mb-6">
