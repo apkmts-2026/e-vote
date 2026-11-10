@@ -1777,16 +1777,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </p>
               </div>
 
-              {pemilihan.hasilTerbukaUntukAdmin && (
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => exportHasilToExcel(calonList, suaraList, pemilihList, sekolah, pemilihan)}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-300 hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-700 shadow-xs"
-                  >
-                    <Download className="w-3.5 h-3.5 text-emerald-600" />
-                    Download Excel Hasil
-                  </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  {pemilihan.hasilTerbukaUntukAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => exportHasilToExcel(calonList, suaraList, pemilihList, sekolah, pemilihan)}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-300 hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-700 shadow-xs cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5 text-emerald-600" />
+                      Download Excel Hasil
+                    </button>
+                  )}
 
                   <button
                     type="button"
@@ -1807,13 +1808,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <button
                     type="button"
                     onClick={() => setBeritaAcaraOpen(true)}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 rounded-xl text-xs font-black shadow-md shadow-amber-500/20"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 rounded-xl text-xs font-black shadow-md shadow-amber-500/20 cursor-pointer"
+                    title="Cetak Berita Acara (Blangko Manual Sebelum Acara atau Otomatis Setelah Acara)"
                   >
                     <Printer className="w-3.5 h-3.5" />
-                    Cetak Berita Acara Resmi
+                    {pemilihan.hasilTerbukaUntukAdmin ? 'Cetak Berita Acara (Otomatis)' : 'Cetak Berita Acara (Blangko/Otomatis)'}
                   </button>
                 </div>
-              )}
+
             </div>
 
             {/* RULE 10: SEBELUM TOMBOL [LIHAT SUARA] DIGUNAKAN, JANGAN TAMPILKAN JUMLAH SUARA MASING-MASING CALON */}
@@ -3290,6 +3292,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         calonList={calonList}
         pemilihList={pemilihList}
         suaraList={suaraList}
+        isResultsUnlocked={pemilihan.hasilTerbukaUntukAdmin}
       />
 
       {/* MODAL: CETAK KARTU PEMILIH (A4 / FOLIO) */}
