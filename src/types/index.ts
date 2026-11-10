@@ -59,6 +59,7 @@ export interface PengaturanPemilihan {
   tahunPelajaran: string;
   periode: string;
   tanggalPemilihan: string;
+  hariPemilihan?: string; // Hari pelaksanaan, contoh: 'Sabtu', 'Senin'
   waktuMulai: string; // HH:mm
   waktuSelesai: string; // HH:mm
   status: ElectionStatus;

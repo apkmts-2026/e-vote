@@ -247,6 +247,53 @@ export function runFullQCAudit() {
     'Semua calon memiliki atribut lengkap'
   );
 
+  // Skenario: Tambah calon baru
+  const newCandidatePayload = {
+    noUrut: 99,
+    nama: 'Calon Uji Coba QC',
+    kelas: 'VIII-QC',
+    foto: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500',
+    visi: 'Visi pengujian calon',
+    misi: ['Misi 1', 'Misi 2'],
+    tagline: 'Cerdas dan Berintegritas',
+    aktif: true,
+  };
+  const addedCandidate = StorageService.addCalon(newCandidatePayload, 'test-runner');
+  const foundAddedCandidate = StorageService.getCalon().find(c => c.id === addedCandidate.id);
+  assert(
+    'CRUD Calon',
+    'Tambah data calon baru',
+    foundAddedCandidate !== undefined && foundAddedCandidate.nama === 'Calon Uji Coba QC',
+    'Calon baru berhasil disimpan ke storage',
+    `Calon tersimpan: ${foundAddedCandidate?.nama} (No. 0${foundAddedCandidate?.noUrut})`
+  );
+
+  // Skenario: Edit data calon
+  const updatedCandidate = StorageService.updateCalon(
+    addedCandidate.id,
+    { nama: 'Calon Uji Coba QC (Telah Diedit)', tagline: 'Tagline Baru' },
+    'test-runner'
+  );
+  const foundUpdatedCandidate = StorageService.getCalon().find(c => c.id === addedCandidate.id);
+  assert(
+    'CRUD Calon',
+    'Edit data calon OSIS',
+    foundUpdatedCandidate !== undefined && foundUpdatedCandidate.nama === 'Calon Uji Coba QC (Telah Diedit)',
+    'Perubahan data calon berhasil diperbarui di storage',
+    `Nama calon setelah edit: ${foundUpdatedCandidate?.nama}`
+  );
+
+  // Bersihkan data calon pengujian
+  StorageService.deleteCalon(addedCandidate.id, 'test-runner');
+  const foundAfterDeleteCandidate = StorageService.getCalon().find(c => c.id === addedCandidate.id);
+  assert(
+    'CRUD Calon',
+    'Hapus calon pengujian',
+    foundAfterDeleteCandidate === undefined,
+    'Calon pengujian berhasil dibersihkan',
+    foundAfterDeleteCandidate === undefined ? 'Bersih kembali' : 'Masih ada'
+  );
+
   // -------------------------------------------------------------
   // TAHAP 6: TESTING RESET PASSWORD & KEAMANAN ADMIN
   // -------------------------------------------------------------

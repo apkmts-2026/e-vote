@@ -57,6 +57,11 @@ import {
   exportHasilToExcel,
 } from '../../utils/excel';
 import { GAS_FILES, GasFile } from '../../utils/gasCode';
+import {
+  DAFTAR_HARI_INDONESIA,
+  getNamaHariFromDate,
+  formatTanggalIndonesia,
+} from '../../utils/date';
 import { BeritaAcaraModal } from '../reports/BeritaAcaraModal';
 import { KartuPemilihModal } from '../reports/KartuPemilihModal';
 import { AbsensiPemilihModal } from '../reports/AbsensiPemilihModal';
@@ -146,6 +151,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Calon CRUD States
   const [calonModalOpen, setCalonModalOpen] = useState<boolean>(false);
   const [editingCalon, setEditingCalon] = useState<Calon | null>(null);
+  const [isSavingCalon, setIsSavingCalon] = useState<boolean>(false);
   const [calonForm, setCalonForm] = useState({
     noUrut: 1,
     nama: '',
@@ -334,8 +340,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Open Calon Modal for Add or Edit
   const openAddCalonModal = () => {
     setEditingCalon(null);
+    const nextNoUrut = calonList.length > 0
+      ? Math.max(...calonList.map((c) => c.noUrut)) + 1
+      : 1;
     setCalonForm({
-      noUrut: calonList.length + 1,
+      noUrut: nextNoUrut,
       nama: '',
       kelas: '',
       foto: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500',
@@ -353,7 +362,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       noUrut: calon.noUrut,
       nama: calon.nama,
       kelas: calon.kelas,
-      foto: calon.foto,
+      foto: calon.foto || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500',
       visi: calon.visi,
       misiText: calon.misi.join('\n'),
       tagline: calon.tagline || '',
@@ -362,48 +371,76 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setCalonModalOpen(true);
   };
 
-  // Save Calon
-  const handleSaveCalon = (e: React.FormEvent) => {
+  // Save Calon (Tambah & Edit)
+  const handleSaveCalon = async (e: React.FormEvent) => {
     e.preventDefault();
-    const misiArray = calonForm.misiText
-      .split('\n')
-      .map((m) => m.trim())
-      .filter((m) => m.length > 0);
-
-    if (editingCalon) {
-      StorageService.updateCalon(
-        editingCalon.id,
-        {
-          noUrut: Number(calonForm.noUrut),
-          nama: calonForm.nama,
-          kelas: calonForm.kelas,
-          foto: calonForm.foto,
-          visi: calonForm.visi,
-          misi: misiArray.length > 0 ? misiArray : ['Meningkatkan kualitas siswa'],
-          tagline: calonForm.tagline,
-          aktif: calonForm.aktif,
-        },
-        currentAdmin?.username || 'admin'
-      );
-    } else {
-      StorageService.addCalon(
-        {
-          noUrut: Number(calonForm.noUrut),
-          nama: calonForm.nama,
-          kelas: calonForm.kelas,
-          foto: calonForm.foto,
-          visi: calonForm.visi,
-          misi: misiArray.length > 0 ? misiArray : ['Meningkatkan kualitas siswa'],
-          tagline: calonForm.tagline,
-          aktif: calonForm.aktif,
-        },
-        currentAdmin?.username || 'admin'
-      );
+    if (!calonForm.nama.trim()) {
+      showToast('Nama lengkap pasangan calon wajib diisi!', 'error');
+      return;
+    }
+    if (!calonForm.kelas.trim()) {
+      showToast('Kelas pasangan calon wajib diisi!', 'error');
+      return;
     }
 
-    setCalonModalOpen(false);
-    onDataChange();
-    CloudService.saveCalonCloud(StorageService.getCalon());
+    setIsSavingCalon(true);
+    try {
+      const misiArray = calonForm.misiText
+        .split('\n')
+        .map((m) => m.trim())
+        .filter((m) => m.length > 0);
+
+      const candidatePayload = {
+        noUrut: Number(calonForm.noUrut) || 1,
+        nama: calonForm.nama.trim(),
+        kelas: calonForm.kelas.trim(),
+        foto: calonForm.foto.trim() || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500',
+        visi: calonForm.visi.trim() || 'Mewujudkan OSIS yang mandiri, kreatif, dan berprestasi.',
+        misi: misiArray.length > 0 ? misiArray : ['Meningkatkan disiplin dan kegiatan positif siswa'],
+        tagline: calonForm.tagline.trim(),
+        aktif: calonForm.aktif,
+      };
+
+      let savedCalon: Calon;
+      if (editingCalon) {
+        const updated = StorageService.updateCalon(
+          editingCalon.id,
+          candidatePayload,
+          currentAdmin?.username || 'admin'
+        );
+        savedCalon = updated || { ...candidatePayload, id: editingCalon.id };
+      } else {
+        savedCalon = StorageService.addCalon(
+          candidatePayload,
+          currentAdmin?.username || 'admin'
+        );
+      }
+
+      // Update state locally first
+      onDataChange();
+
+      // Persist to Cloud Firestore with await
+      try {
+        await CloudService.saveSingleCalonCloud(savedCalon);
+        await CloudService.saveCalonCloud(StorageService.getCalon());
+      } catch (cloudErr) {
+        console.warn('Peringatan simpan calon ke cloud:', cloudErr);
+      }
+
+      setCalonModalOpen(false);
+      onDataChange();
+      showToast(
+        editingCalon
+          ? `✓ Data Calon No. 0${savedCalon.noUrut} (${savedCalon.nama}) berhasil diperbarui!`
+          : `✓ Calon baru No. 0${savedCalon.noUrut} (${savedCalon.nama}) berhasil ditambahkan!`,
+        'success'
+      );
+    } catch (err) {
+      console.error('Error saat menyimpan calon:', err);
+      showToast('Gagal menyimpan calon. Silakan periksa kembali data Anda.', 'error');
+    } finally {
+      setIsSavingCalon(false);
+    }
   };
 
   const handleDeleteCalon = (id: string) => {
@@ -422,22 +459,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     });
   };
 
-  // Photo Upload Handler for Calon
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setCalonForm((prev) => ({ ...prev, foto: event.target!.result as string }));
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // Process image file with compression so it fits safely in localStorage
-  const processImageFile = (file: File): Promise<string> => {
+  // Process image file with compression so it fits safely in localStorage & Cloud Firestore
+  const processImageFile = (file: File, maxDimension: number = 360, quality: number = 0.88): Promise<string> => {
     return new Promise((resolve) => {
       if (file.type.includes('svg')) {
         const reader = new FileReader();
@@ -449,7 +472,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       reader.onload = (e) => {
         const img = new Image();
         img.onload = () => {
-          const maxDim = 320;
+          const maxDim = maxDimension;
           let width = img.width;
           let height = img.height;
           if (width > height) {
@@ -472,13 +495,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             return;
           }
           ctx.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL(file.type === 'image/png' ? 'image/png' : 'image/jpeg', 0.92));
+          resolve(canvas.toDataURL(file.type === 'image/png' ? 'image/png' : 'image/jpeg', quality));
         };
         img.onerror = () => resolve(e.target?.result as string);
         img.src = e.target?.result as string;
       };
       reader.readAsDataURL(file);
     });
+  };
+
+  // Photo Upload Handler for Calon with automatic optimization
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        const compressed = await processImageFile(file, 480, 0.85);
+        setCalonForm((prev) => ({ ...prev, foto: compressed }));
+        showToast('✓ Foto calon berhasil diproses & dikompres optimal!', 'info');
+      } catch (err) {
+        console.error('Gagal memproses foto calon:', err);
+        showToast('Gagal memproses file foto calon.', 'error');
+      }
+    }
   };
 
   const applyLogoFile = async (file: File) => {
@@ -1111,7 +1149,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </p>
                 <p className="text-xs text-slate-400 mt-1 flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5 text-amber-500" />
-                  Jadwal: {pemilihan.tanggalPemilihan} • Pukul {pemilihan.waktuMulai} - {pemilihan.waktuSelesai} WIB
+                  Jadwal: {formatTanggalIndonesia(pemilihan.tanggalPemilihan, pemilihan.hariPemilihan)} • Pukul {pemilihan.waktuMulai} - {pemilihan.waktuSelesai} WIB
                 </p>
               </div>
 
@@ -2501,7 +2539,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                        Hari Pelaksanaan
+                      </label>
+                      <select
+                        value={electionSettingsForm.hariPemilihan || getNamaHariFromDate(electionSettingsForm.tanggalPemilihan)}
+                        onChange={(e) => setElectionSettingsForm({ ...electionSettingsForm, hariPemilihan: e.target.value })}
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold"
+                      >
+                        {DAFTAR_HARI_INDONESIA.map((h) => (
+                          <option key={h} value={h}>{h}</option>
+                        ))}
+                      </select>
+                    </div>
                     <div>
                       <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
                         Tanggal Pelaksanaan
@@ -2509,7 +2561,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       <input
                         type="date"
                         value={electionSettingsForm.tanggalPemilihan}
-                        onChange={(e) => setElectionSettingsForm({ ...electionSettingsForm, tanggalPemilihan: e.target.value })}
+                        onChange={(e) => {
+                          const newDate = e.target.value;
+                          const calculatedDay = getNamaHariFromDate(newDate);
+                          setElectionSettingsForm({
+                            ...electionSettingsForm,
+                            tanggalPemilihan: newDate,
+                            hariPemilihan: calculatedDay,
+                          });
+                        }}
                         className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold"
                         required
                       />
@@ -3124,6 +3184,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       placeholder="Atau masukkan URL Foto..."
                       className="w-full mt-1.5 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[11px]"
                     />
+                    <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                      <span className="text-[10px] text-slate-500 font-bold mr-1">Foto Bawaan:</span>
+                      {[
+                        { label: '👦 Siswa', url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=500' },
+                        { label: '👧 Siswi', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500' },
+                        { label: '👥 Paslon A', url: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=500' },
+                        { label: '👥 Paslon B', url: 'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=500' },
+                      ].map((preset) => (
+                        <button
+                          key={preset.label}
+                          type="button"
+                          onClick={() => setCalonForm((prev) => ({ ...prev, foto: preset.url }))}
+                          className="px-2 py-0.5 rounded-lg border border-slate-300 bg-white hover:bg-amber-50 hover:border-amber-400 text-[10px] font-bold text-slate-700 cursor-pointer transition-colors"
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -3185,15 +3263,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <button
                   type="button"
                   onClick={() => setCalonModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-100"
+                  disabled={isSavingCalon}
+                  className="px-4 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-slate-950 font-black text-xs shadow-md shadow-amber-500/20"
+                  disabled={isSavingCalon}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-slate-950 font-black text-xs shadow-md shadow-amber-500/20 disabled:opacity-50 inline-flex items-center gap-2 cursor-pointer transition-all"
                 >
-                  Simpan Calon
+                  {isSavingCalon && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                  <span>{isSavingCalon ? 'Menyimpan...' : (editingCalon ? 'Simpan Perubahan' : 'Simpan Calon Baru')}</span>
                 </button>
               </div>
             </form>

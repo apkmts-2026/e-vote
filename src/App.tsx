@@ -81,8 +81,15 @@ export default function App() {
     // 3. Real-time Listeners across all devices
     const unsubCalon = CloudService.subscribeCalon((list) => {
       const items = list || [];
-      setCalonList(items);
-      StorageService.saveCalon(items, 'cloud-sync');
+      if (items.length > 0) {
+        setCalonList(items);
+        StorageService.saveCalon(items, 'cloud-sync');
+      } else {
+        const localCalon = StorageService.getCalon();
+        if (localCalon.length > 0) {
+          CloudService.saveCalonCloud(localCalon);
+        }
+      }
     });
 
     const unsubPemilih = CloudService.subscribePemilih((list) => {

@@ -13,6 +13,7 @@ import {
   Building2
 } from 'lucide-react';
 import { Calon, Pemilih, Suara, PengaturanSekolah, PengaturanPemilihan } from '../../types';
+import { formatTanggalIndonesia, getNamaHariFromDate } from '../../utils/date';
 
 interface BeritaAcaraModalProps {
   isOpen: boolean;
@@ -89,12 +90,8 @@ export const BeritaAcaraModal: React.FC<BeritaAcaraModalProps> = ({
     window.print();
   };
 
-  const formattedDate = new Date().toLocaleDateString('id-ID', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
+  const hariPelaksanaan = pemilihan.hariPemilihan || getNamaHariFromDate(pemilihan.tanggalPemilihan);
+  const tanggalPelaksanaan = formatTanggalIndonesia(pemilihan.tanggalPemilihan, hariPelaksanaan);
 
   return createPortal(
     <div
@@ -224,6 +221,11 @@ export const BeritaAcaraModal: React.FC<BeritaAcaraModalProps> = ({
                 placeholder="Kosongkan jika TTD manual"
               />
             </div>
+            <div className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-xl border border-slate-300 text-[11px] shadow-xs">
+              <Calendar className="w-3.5 h-3.5 text-amber-600" />
+              <span className="text-slate-500 font-bold">Jadwal Acuan:</span>
+              <strong className="text-slate-800">{tanggalPelaksanaan}</strong>
+            </div>
           </div>
         </div>
 
@@ -302,7 +304,7 @@ export const BeritaAcaraModal: React.FC<BeritaAcaraModalProps> = ({
           {/* Document Body Intro */}
           <div className="text-[11px] sm:text-xs leading-relaxed mb-3 text-slate-800">
             <p className="mb-1 text-justify">
-              Pada hari ini, <strong>{formattedDate}</strong>, bertempat di <strong>{sekolah.namaSekolah}</strong>,
+              Pada hari ini, <strong>{tanggalPelaksanaan}</strong>, bertempat di <strong>{sekolah.namaSekolah}</strong>,
               telah dilaksanakan proses pemungutan dan penghitungan suara secara resmi dalam rangka:{' '}
               <strong>{pemilihan.namaKegiatan} Masa Bakti {pemilihan.tahunPelajaran}</strong>.
             </p>

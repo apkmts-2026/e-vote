@@ -41,6 +41,7 @@ export const DEFAULT_PENGATURAN_PEMILIHAN: PengaturanPemilihan = {
   tahunPelajaran: '2026/2027',
   periode: 'Masa Bakti 2026/2027',
   tanggalPemilihan: '2026-10-03',
+  hariPemilihan: 'Sabtu',
   waktuMulai: '07:30',
   waktuSelesai: '13:00',
   status: 'SEDANG_BERLANGSUNG',
@@ -202,10 +203,15 @@ export const StorageService = {
     this.addAuditLog(actor, 'Tambah Calon', `Menambahkan calon no. urut ${calon.noUrut}: ${calon.nama}`);
     return newCalon;
   },
-  updateCalon(id: string, updated: Partial<Calon>, actor: string = 'admin'): void {
-    const list = this.getCalon().map((c) => (c.id === id ? { ...c, ...updated } : c));
+  updateCalon(id: string, updated: Partial<Calon>, actor: string = 'admin'): Calon | null {
+    const list = this.getCalon();
+    const index = list.findIndex((c) => c.id === id);
+    if (index === -1) return null;
+    const updatedCalon = { ...list[index], ...updated, id };
+    list[index] = updatedCalon;
     this.saveCalon(list, actor);
-    this.addAuditLog(actor, 'Edit Calon', `Memperbarui data calon ID ${id}`);
+    this.addAuditLog(actor, 'Edit Calon', `Memperbarui data calon No. 0${updatedCalon.noUrut}: ${updatedCalon.nama}`);
+    return updatedCalon;
   },
   deleteCalon(id: string, actor: string = 'admin'): void {
     const list = this.getCalon();

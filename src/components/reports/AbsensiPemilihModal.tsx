@@ -13,6 +13,7 @@ import {
   Layers
 } from 'lucide-react';
 import { Pemilih, PengaturanSekolah, PengaturanPemilihan } from '../../types';
+import { formatTanggalIndonesia, getNamaHariFromDate } from '../../utils/date';
 
 interface AbsensiPemilihModalProps {
   isOpen: boolean;
@@ -72,12 +73,8 @@ export const AbsensiPemilihModal: React.FC<AbsensiPemilihModalProps> = ({
     window.print();
   };
 
-  const formattedDate = new Date().toLocaleDateString('id-ID', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
+  const hariPelaksanaan = pemilihan.hariPemilihan || getNamaHariFromDate(pemilihan.tanggalPemilihan);
+  const tanggalPelaksanaan = formatTanggalIndonesia(pemilihan.tanggalPemilihan, hariPelaksanaan);
 
   return createPortal(
     <div
@@ -221,6 +218,13 @@ export const AbsensiPemilihModal: React.FC<AbsensiPemilihModalProps> = ({
               />
             </div>
 
+            {/* Jadwal Pelaksanaan Info Badge */}
+            <div className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-xl border border-slate-300 text-[11px] shadow-xs">
+              <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="text-slate-500 font-bold">Jadwal:</span>
+              <strong className="text-slate-800">{tanggalPelaksanaan}</strong>
+            </div>
+
           </div>
 
           <div className="text-slate-600 font-mono text-[11px] bg-white px-2.5 py-1.5 rounded-xl border border-slate-300 shadow-xs">
@@ -288,7 +292,7 @@ export const AbsensiPemilihModal: React.FC<AbsensiPemilihModalProps> = ({
                 </div>
                 <div>
                   <span className="text-slate-500">Hari, Tanggal:</span>{' '}
-                  <strong className="text-slate-900">{formattedDate}</strong>
+                  <strong className="text-slate-900">{tanggalPelaksanaan}</strong>
                 </div>
                 <div>
                   <span className="text-slate-500">Rombel / Kelas:</span>{' '}
