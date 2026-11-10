@@ -33,6 +33,7 @@ export const DEFAULT_PENGATURAN_SEKOLAH: PengaturanSekolah = {
   nipKepalaSekolah: '19750812 200501 1 003',
   namaKetuaPanitia: 'Ahmad Raihan Pratama (Ketua MPK)',
   namaPembinaOsis: 'Ust. Nur Cahyono, S.Pd',
+  namaKetuaOsis: '',
 };
 
 export const DEFAULT_PENGATURAN_PEMILIHAN: PengaturanPemilihan = {

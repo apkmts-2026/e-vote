@@ -43,6 +43,9 @@ export const BeritaAcaraModal: React.FC<BeritaAcaraModalProps> = ({
   const [nomorSurat, setNomorSurat] = useState<string>(
     `004/PAN-PILKETOS/${pemilihan.tahunPelajaran.replace('/', '-')}/X/2026`
   );
+  const [namaKetuaOsis, setNamaKetuaOsis] = useState<string>(
+    sekolah.namaKetuaOsis || ''
+  );
 
   useEffect(() => {
     if (isOpen) {
@@ -198,16 +201,29 @@ export const BeritaAcaraModal: React.FC<BeritaAcaraModalProps> = ({
 
           </div>
 
-          {/* Nomor Surat Editor */}
-          <div className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-xl border border-slate-300 text-[11px] shadow-xs">
-            <span className="text-slate-500 font-bold">No. Surat:</span>
-            <input
-              type="text"
-              value={nomorSurat}
-              onChange={(e) => setNomorSurat(e.target.value)}
-              className="bg-transparent font-mono text-slate-800 outline-none w-56 sm:w-64 font-bold"
-              placeholder="No. Berita Acara..."
-            />
+          {/* Nomor Surat & Nama Ketua OSIS Editor */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-xl border border-slate-300 text-[11px] shadow-xs">
+              <span className="text-slate-500 font-bold">No. Surat:</span>
+              <input
+                type="text"
+                value={nomorSurat}
+                onChange={(e) => setNomorSurat(e.target.value)}
+                className="bg-transparent font-mono text-slate-800 outline-none w-52 sm:w-60 font-bold"
+                placeholder="No. Berita Acara..."
+              />
+            </div>
+
+            <div className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-xl border border-slate-300 text-[11px] shadow-xs">
+              <span className="text-slate-500 font-bold">Nama Ketua OSIS:</span>
+              <input
+                type="text"
+                value={namaKetuaOsis}
+                onChange={(e) => setNamaKetuaOsis(e.target.value)}
+                className="bg-transparent font-semibold text-slate-800 outline-none w-44 sm:w-52"
+                placeholder="Kosongkan jika TTD manual"
+              />
+            </div>
           </div>
         </div>
 
@@ -422,33 +438,24 @@ export const BeritaAcaraModal: React.FC<BeritaAcaraModalProps> = ({
             </p>
           </div>
 
-          {/* Signatures Section (3 Columns + Headmaster) */}
+          {/* Signatures Section: TTD HANYA KETUA OSIS, PANITIA, KEPALA SEKOLAH */}
           <div className="pt-2 border-t border-slate-300 break-inside-avoid page-break-inside-avoid text-[10px] sm:text-[11px]">
-            <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="grid grid-cols-2 gap-4 text-center">
               
               <div>
-                <p className="text-slate-600 mb-0.5">Pembina OSIS,</p>
-                <div className="h-14 sm:h-16 flex items-center justify-center text-slate-300 italic text-[9px]">
-                  (Tanda Tangan & Cap)
-                </div>
-                <p className="font-bold underline uppercase text-slate-900">
-                  {sekolah.namaPembinaOsis || '( .................................... )'}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-slate-600 mb-0.5">Saksi / Pengawas TPS,</p>
+                <p className="text-slate-800 font-bold mb-0.5">Ketua OSIS,</p>
                 <div className="h-14 sm:h-16 flex items-center justify-center text-slate-300 italic text-[9px]">
                   (Tanda Tangan)
                 </div>
                 <p className="font-bold underline uppercase text-slate-900">
-                  ( .................................... )
+                  {namaKetuaOsis.trim() || '( .................................... )'}
                 </p>
               </div>
 
               <div>
-                <p className="text-slate-600 mb-0.5">Ketua Panitia Pemilihan,</p>
-                <div className="h-14 sm:h-16 flex items-center justify-center text-slate-300 italic text-[9px]">
+                <p className="text-slate-800 font-bold mb-0.5">Panitia Pemilihan,</p>
+                <p className="text-[9px] text-slate-500 -mt-0.5 font-medium">Ketua Panitia</p>
+                <div className="h-12 sm:h-14 flex items-center justify-center text-slate-300 italic text-[9px]">
                   (Tanda Tangan & Cap)
                 </div>
                 <p className="font-bold underline uppercase text-slate-900">
@@ -456,7 +463,7 @@ export const BeritaAcaraModal: React.FC<BeritaAcaraModalProps> = ({
                 </p>
               </div>
 
-              <div className="col-span-3 text-center mt-2 pt-1.5 border-t border-slate-200">
+              <div className="col-span-2 text-center mt-2 pt-2 border-t border-slate-200">
                 <p className="text-slate-600">Mengetahui & Mengesahkan,</p>
                 <p className="font-bold text-slate-900 text-xs">Kepala {sekolah.namaSekolah}</p>
                 <div className="h-12 sm:h-14 flex items-center justify-center text-slate-300 italic text-[9px]">
@@ -465,7 +472,7 @@ export const BeritaAcaraModal: React.FC<BeritaAcaraModalProps> = ({
                 <p className="font-bold underline uppercase text-slate-900 text-xs">
                   {sekolah.namaKepalaSekolah}
                 </p>
-                <p className="text-[10px] text-slate-600">NIP: {sekolah.nipKepalaSekolah}</p>
+                <p className="text-[10px] text-slate-600">NIP: {sekolah.nipKepalaSekolah || '-'}</p>
               </div>
 
             </div>

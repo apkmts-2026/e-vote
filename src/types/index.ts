@@ -51,6 +51,7 @@ export interface PengaturanSekolah {
   nipKepalaSekolah: string;
   namaKetuaPanitia: string;
   namaPembinaOsis: string;
+  namaKetuaOsis?: string;
 }
 
 export interface PengaturanPemilihan {

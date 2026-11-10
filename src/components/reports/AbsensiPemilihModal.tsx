@@ -33,6 +33,9 @@ export const AbsensiPemilihModal: React.FC<AbsensiPemilihModalProps> = ({
   const [modeAbsensi, setModeAbsensi] = useState<'BLANK' | 'REKAP'>('BLANK');
   const [sortBy, setSortBy] = useState<'NAMA' | 'NISN'>('NAMA');
   const [paperSize, setPaperSize] = useState<'A4' | 'FOLIO'>('A4');
+  const [namaKetuaOsis, setNamaKetuaOsis] = useState<string>(
+    sekolah.namaKetuaOsis || ''
+  );
 
   useEffect(() => {
     if (isOpen) {
@@ -204,6 +207,18 @@ export const AbsensiPemilihModal: React.FC<AbsensiPemilihModalProps> = ({
               >
                 Folio / F4
               </button>
+            </div>
+
+            {/* Nama Ketua OSIS Editor */}
+            <div className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-xl border border-slate-300 text-[11px] shadow-xs">
+              <span className="text-slate-500 font-bold">Ketua OSIS:</span>
+              <input
+                type="text"
+                value={namaKetuaOsis}
+                onChange={(e) => setNamaKetuaOsis(e.target.value)}
+                className="bg-transparent font-semibold text-slate-800 outline-none w-36 sm:w-44"
+                placeholder="( .................... )"
+              />
             </div>
 
           </div>
@@ -422,42 +437,31 @@ export const AbsensiPemilihModal: React.FC<AbsensiPemilihModalProps> = ({
                   </div>
                 </div>
 
-                {/* Lembar Tanda Tangan Resmi Panitia & Saksi */}
-                <div className="grid grid-cols-3 gap-4 text-center mt-6 pt-2 break-inside-avoid page-break-inside-avoid">
+                {/* Lembar Tanda Tangan Resmi: TTD HANYA KETUA OSIS, PANITIA, KEPALA SEKOLAH */}
+                <div className="grid grid-cols-2 gap-4 text-center mt-6 pt-2 break-inside-avoid page-break-inside-avoid text-[11px]">
                   <div>
-                    <p className="text-[11px] text-slate-600">Petugas Registrasi / KPPS,</p>
+                    <p className="text-slate-800 font-bold mb-0.5">Ketua OSIS,</p>
                     <div className="h-14 sm:h-16 flex items-center justify-center text-slate-300 italic text-[10px]">
                       (Tanda Tangan)
                     </div>
-                    <p className="font-bold underline uppercase text-slate-900 text-[11px]">
-                      ( .................................... )
+                    <p className="font-bold underline uppercase text-slate-900">
+                      {namaKetuaOsis.trim() || '( .................................... )'}
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-[11px] text-slate-600">Saksi / Pengawas TPS,</p>
-                    <div className="h-14 sm:h-16 flex items-center justify-center text-slate-300 italic text-[10px]">
-                      (Tanda Tangan)
-                    </div>
-                    <p className="font-bold underline uppercase text-slate-900 text-[11px]">
-                      ( .................................... )
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-[11px] text-slate-600">
-                      Ketua Panitia Pemilihan,
-                    </p>
-                    <div className="h-14 sm:h-16 flex items-center justify-center text-slate-300 italic text-[10px]">
+                    <p className="text-slate-800 font-bold mb-0.5">Panitia Pemilihan,</p>
+                    <p className="text-[10px] text-slate-500 -mt-0.5 font-medium">Ketua Panitia</p>
+                    <div className="h-12 sm:h-14 flex items-center justify-center text-slate-300 italic text-[10px]">
                       (Tanda Tangan & Cap)
                     </div>
-                    <p className="font-bold underline uppercase text-slate-900 text-[11px]">
+                    <p className="font-bold underline uppercase text-slate-900">
                       {sekolah.namaKetuaPanitia || '( .................................... )'}
                     </p>
                   </div>
 
-                  <div className="col-span-3 text-center mt-3 pt-2 border-t border-slate-300">
-                    <p className="text-[11px] text-slate-600">Mengetahui & Mengesahkan,</p>
+                  <div className="col-span-2 text-center mt-3 pt-2 border-t border-slate-300">
+                    <p className="text-slate-600">Mengetahui & Mengesahkan,</p>
                     <p className="font-bold text-slate-900 text-xs">Kepala {sekolah.namaSekolah}</p>
                     <div className="h-12 sm:h-14 flex items-center justify-center text-slate-300 italic text-[10px]">
                       (Tanda Tangan & Cap Dinas)
@@ -465,7 +469,7 @@ export const AbsensiPemilihModal: React.FC<AbsensiPemilihModalProps> = ({
                     <p className="font-bold underline uppercase text-slate-900 text-xs">
                       {sekolah.namaKepalaSekolah}
                     </p>
-                    <p className="text-[10px] text-slate-600">NIP: {sekolah.nipKepalaSekolah}</p>
+                    <p className="text-[10px] text-slate-600">NIP: {sekolah.nipKepalaSekolah || '-'}</p>
                   </div>
                 </div>
 

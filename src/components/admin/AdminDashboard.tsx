@@ -1020,7 +1020,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               { id: 'calon', label: 'Data Calon OSIS', icon: Users },
               { id: 'pemilih', label: 'Data Pemilih (DPT)', icon: Vote },
               { id: 'monitoring', label: 'Monitoring Suara', icon: Activity },
-              { id: 'hasil', label: 'Hasil Pemilihan', icon: BarChart3 },
+              { id: 'hasil', label: 'Hasil & Berita Acara', icon: BarChart3 },
               { id: 'pengaturan', label: 'Pengaturan & Upload Logo', icon: Settings },
               { id: 'audit_log', label: 'Audit Log', icon: FileText },
             ].map((tab) => {
@@ -1263,12 +1263,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
                   <button
                     type="button"
-                    onClick={() => setActiveTab('hasil')}
-                    className="p-3.5 rounded-2xl bg-slate-50 hover:bg-amber-50/70 hover:border-amber-300 border border-slate-200 text-left transition-all group shadow-xs"
+                    onClick={() => {
+                      setActiveTab('hasil');
+                      setBeritaAcaraOpen(true);
+                    }}
+                    className="p-3.5 rounded-2xl bg-amber-50/70 hover:bg-amber-100 border border-amber-300 text-left transition-all group shadow-xs cursor-pointer"
                   >
-                    <BarChart3 className="w-5 h-5 text-amber-600 mb-1.5 group-hover:scale-110 transition-transform" />
-                    <p className="font-bold text-xs text-slate-900">Berita Acara</p>
-                    <p className="text-[10px] text-slate-500">Cetak dokumen hasil</p>
+                    <Printer className="w-5 h-5 text-amber-700 mb-1.5 group-hover:scale-110 transition-transform" />
+                    <p className="font-bold text-xs text-slate-900">Cetak Berita Acara</p>
+                    <p className="text-[10px] text-amber-800">Blangko / Hasil Otomatis</p>
                   </button>
 
                   <button
@@ -1500,6 +1503,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 >
                   <FileSpreadsheet className="w-3.5 h-3.5 text-white" />
                   Cetak Absensi DPT
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setBeritaAcaraOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 rounded-xl text-xs font-bold shadow-xs cursor-pointer"
+                  title="Cetak Berita Acara Resmi (Blangko Sebelum Acara atau Otomatis Setelah Acara)"
+                >
+                  <Printer className="w-3.5 h-3.5 text-amber-600" />
+                  Cetak Berita Acara
                 </button>
 
                 <button
@@ -1846,14 +1859,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setConfirmUnlockModal(true)}
-                  className="py-3.5 px-6 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-slate-950 font-black text-sm shadow-lg shadow-amber-500/30 transition-all active:scale-95 inline-flex items-center gap-2"
-                >
-                  <Unlock className="w-4 h-4" />
-                  BUKA & LIHAT HASIL SUARA
-                </button>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmUnlockModal(true)}
+                    className="w-full sm:w-auto py-3.5 px-6 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-slate-950 font-black text-sm shadow-lg shadow-amber-500/30 transition-all active:scale-95 inline-flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Unlock className="w-4 h-4" />
+                    BUKA & LIHAT HASIL SUARA
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setBeritaAcaraOpen(true)}
+                    className="w-full sm:w-auto py-3.5 px-5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-sm border border-slate-300 shadow-xs inline-flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                  >
+                    <Printer className="w-4 h-4 text-amber-600" />
+                    Cetak Blangko Berita Acara (Sebelum Acara)
+                  </button>
+                </div>
               </div>
             ) : (
               /* RESULTS ARE UNLOCKED FOR ADMIN */
@@ -2382,6 +2406,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           type="text"
                           value={schoolSettingsForm.namaKetuaPanitia}
                           onChange={(e) => setSchoolSettingsForm({ ...schoolSettingsForm, namaKetuaPanitia: e.target.value })}
+                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                          Nama Ketua OSIS (Masa Bakti Lalu)
+                        </label>
+                        <input
+                          type="text"
+                          value={schoolSettingsForm.namaKetuaOsis || ''}
+                          onChange={(e) => setSchoolSettingsForm({ ...schoolSettingsForm, namaKetuaOsis: e.target.value })}
+                          placeholder="Kosongkan jika TTD manual ( .................... )"
                           className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold"
                         />
                       </div>
