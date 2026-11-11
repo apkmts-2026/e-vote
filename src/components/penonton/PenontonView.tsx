@@ -280,9 +280,92 @@ export const PenontonView: React.FC<PenontonViewProps> = ({
 
             </div>
 
-            {/* Privacy Badge Guarantee */}
-            <div className="text-center p-4 bg-white/90 backdrop-blur-md rounded-2xl border border-white/80 max-w-xl mx-auto text-xs text-slate-700 font-semibold shadow-lg">
-              🔒 Perolehan suara masing-masing calon dirahasiakan selama pemilihan berlangsung demi menjaga kerahasiaan pilihan siswa.
+            {/* DAFTAR FOTO PASLON KETUA & WAKIL KETUA OSIS */}
+            <div className="space-y-4 pt-2">
+              <div className="text-center">
+                <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest bg-white/90 backdrop-blur-md text-slate-800 border border-white/80 shadow-md">
+                  <Award className="w-4 h-4 text-amber-500" />
+                  KANDIDAT PASLON KETUA & WAKIL KETUA OSIS
+                </span>
+                <h3 className="text-xl sm:text-2xl font-black text-slate-900 mt-2 tracking-tight drop-shadow-sm">
+                  Pasangan Calon Pemilihan OSIS
+                </h3>
+              </div>
+
+              <div
+                className={`grid gap-6 max-w-6xl mx-auto ${
+                  calonList.filter((c) => c.aktif !== false).length === 2
+                    ? 'grid-cols-1 md:grid-cols-2 max-w-4xl'
+                    : calonList.filter((c) => c.aktif !== false).length === 1
+                    ? 'grid-cols-1 max-w-md'
+                    : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+                }`}
+              >
+                {calonList
+                  .filter((c) => c.aktif !== false)
+                  .sort((a, b) => a.noUrut - b.noUrut)
+                  .map((calon) => (
+                    <div
+                      key={calon.id}
+                      className="bg-white/95 backdrop-blur-xl rounded-3xl border-2 border-white/80 overflow-hidden shadow-2xl hover:shadow-cyan-500/10 transition-all duration-300 flex flex-col group"
+                    >
+                      {/* Header Pita Nomor Urut */}
+                      <div className="bg-gradient-to-r from-blue-700 via-indigo-600 to-blue-800 text-white px-5 py-3 flex items-center justify-between shadow-md">
+                        <span className="text-xs font-black tracking-widest uppercase text-blue-100">
+                          CALON KETUA OSIS
+                        </span>
+                        <span className="font-mono text-sm font-black px-3 py-1 rounded-full bg-white text-blue-900 shadow-sm border border-blue-200">
+                          NO. 0{calon.noUrut}
+                        </span>
+                      </div>
+
+                      {/* Foto Paslon */}
+                      <div className="relative w-full aspect-[4/3] bg-gradient-to-b from-slate-100 to-slate-200 overflow-hidden flex items-center justify-center">
+                        {calon.foto ? (
+                          <img
+                            src={calon.foto}
+                            alt={calon.nama}
+                            className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
+                          />
+                        ) : (
+                          <div className="w-24 h-24 rounded-full bg-slate-200 flex items-center justify-center text-slate-400">
+                            <Users className="w-12 h-12" />
+                          </div>
+                        )}
+                        <div className="absolute top-3 left-3 bg-red-600 text-white font-mono font-black text-xs px-2.5 py-1 rounded-xl shadow-lg border border-white/60">
+                          0{calon.noUrut}
+                        </div>
+                      </div>
+
+                      {/* Detail Calon */}
+                      <div className="p-5 flex-1 flex flex-col justify-between text-slate-900">
+                        <div>
+                          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                            Kandidat No. Urut 0{calon.noUrut}
+                          </span>
+                          <h4 className="text-lg sm:text-xl font-black text-slate-900 leading-tight">
+                            {calon.nama}
+                          </h4>
+                          <div className="inline-block mt-2 px-3 py-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold shadow-sm">
+                            Kelas {calon.kelas}
+                          </div>
+
+                          {calon.tagline && (
+                            <p className="mt-3 text-xs sm:text-sm text-slate-600 italic font-medium bg-slate-50 p-3 rounded-2xl border border-slate-200/80">
+                              "{calon.tagline}"
+                            </p>
+                          )}
+
+                          {calon.visi && (
+                            <div className="mt-3 text-xs text-slate-600 line-clamp-2">
+                              <strong className="text-slate-900">Visi:</strong> {calon.visi}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
             </div>
 
           </div>
