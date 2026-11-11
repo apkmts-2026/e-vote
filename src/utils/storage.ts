@@ -36,14 +36,22 @@ export const DEFAULT_PENGATURAN_SEKOLAH: PengaturanSekolah = {
   namaKetuaOsis: '',
 };
 
+const getTodayFormattedISO = (): string => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export const DEFAULT_PENGATURAN_PEMILIHAN: PengaturanPemilihan = {
   namaKegiatan: 'PEMILIHAN KETUA & WAKIL KETUA OSIS',
   tahunPelajaran: '2026/2027',
   periode: 'Masa Bakti 2026/2027',
-  tanggalPemilihan: '2026-10-03',
-  hariPemilihan: 'Sabtu',
-  waktuMulai: '07:30',
-  waktuSelesai: '13:00',
+  tanggalPemilihan: getTodayFormattedISO(),
+  hariPemilihan: 'Selasa',
+  waktuMulai: '07:00',
+  waktuSelesai: '23:59',
   status: 'SEDANG_BERLANGSUNG',
   hasilTerbukaUntukAdmin: false,
   hasilDitampilkanKePenonton: false,
@@ -464,7 +472,14 @@ export const StorageService = {
     this.addAuditLog(actor, 'Pengaturan Sekolah', 'Memperbarui profil data sekolah & madrasah');
   },
   getPengaturanPemilihan(): PengaturanPemilihan {
-    return getStorage<PengaturanPemilihan>(STORAGE_KEYS.PENGATURAN_PEMILIHAN, DEFAULT_PENGATURAN_PEMILIHAN);
+    const data = getStorage<PengaturanPemilihan>(STORAGE_KEYS.PENGATURAN_PEMILIHAN, DEFAULT_PENGATURAN_PEMILIHAN);
+    if (data.tanggalPemilihan === '2026-10-03') {
+      data.tanggalPemilihan = getTodayFormattedISO();
+      data.waktuMulai = '07:00';
+      data.waktuSelesai = '23:59';
+      setStorage(STORAGE_KEYS.PENGATURAN_PEMILIHAN, data);
+    }
+    return data;
   },
   savePengaturanPemilihan(data: PengaturanPemilihan, actor: string = 'admin'): void {
     setStorage(STORAGE_KEYS.PENGATURAN_PEMILIHAN, data);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Vote,
   Lock,
@@ -13,11 +13,15 @@ import {
   KeyRound,
   Shield,
   HelpCircle,
-  X
+  X,
+  Calendar,
+  Clock,
+  AlertTriangle
 } from 'lucide-react';
 import { Calon, Pemilih, PengaturanSekolah, PengaturanPemilihan } from '../../types';
 import { StorageService } from '../../utils/storage';
 import { CloudService } from '../../utils/firebase';
+import { validasiJadwalBilik, ValidasiJadwalResult } from '../../utils/date';
 
 interface PemilihViewProps {
   sekolah: PengaturanSekolah;
@@ -37,6 +41,17 @@ export const PemilihView: React.FC<PemilihViewProps> = ({
   // Session state for current voter
   const [currentVoter, setCurrentVoter] = useState<Pemilih | null>(null);
   
+  // Real-time clock state for live schedule evaluation
+  const [currentLiveTime, setCurrentLiveTime] = useState<Date>(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentLiveTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Access validation modal state
+  const [accessDeniedModal, setAccessDeniedModal] = useState<ValidasiJadwalResult | null>(null);
+
   // Login input states
   const [inputToken, setInputToken] = useState<string>('');
   const [loginError, setLoginError] = useState<string>('');
@@ -54,6 +69,15 @@ export const PemilihView: React.FC<PemilihViewProps> = ({
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
+
+    // 1. Cek validasi hari & jam pelaksanaan pemilihan (Bilik Suara Digital)
+    const scheduleCheck = validasiJadwalBilik(pemilihan, new Date());
+    if (!scheduleCheck.bisaMasuk) {
+      setLoginError(scheduleCheck.pesan);
+      setAccessDeniedModal(scheduleCheck);
+      return;
+    }
+
     const cleanToken = inputToken.trim().toUpperCase();
 
     if (!cleanToken) {
@@ -64,6 +88,15 @@ export const PemilihView: React.FC<PemilihViewProps> = ({
     setIsLoading(true);
 
     setTimeout(() => {
+      // Re-verify schedule inside timeout
+      const recheck = validasiJadwalBilik(pemilihan, new Date());
+      if (!recheck.bisaMasuk) {
+        setLoginError(recheck.pesan);
+        setAccessDeniedModal(recheck);
+        setIsLoading(false);
+        return;
+      }
+
       // Find voter in database
       const found = pemilihList.find(
         (p) =>
@@ -83,25 +116,10 @@ export const PemilihView: React.FC<PemilihViewProps> = ({
         return;
       }
 
-      // Check election status
-      if (pemilihan.status === 'BELUM_DIMULAI') {
-        setLoginError('Pemilihan belum dibuka oleh Panitia. Silakan tunggu hingga waktu pemungutan suara dimulai.');
-        setIsLoading(false);
-        return;
-      }
-
-      if (pemilihan.status === 'SELESAI') {
-        setLoginError('Waktu pemungutan suara telah berakhir dan ditutup.');
-        setIsLoading(false);
-        return;
-      }
-
       setCurrentVoter(found);
       setIsLoading(false);
     }, 300);
   };
-
-
 
   // Handle Vote Confirmation
   const initiateVote = (calon: Calon) => {
@@ -111,6 +129,15 @@ export const PemilihView: React.FC<PemilihViewProps> = ({
 
   const handleConfirmVote = async () => {
     if (!currentVoter || !selectedCandidate) return;
+
+    // Check schedule validity right before casting vote
+    const scheduleCheck = validasiJadwalBilik(pemilihan, new Date());
+    if (!scheduleCheck.bisaMasuk) {
+      setErrorMessage(`Waktu pemungutan suara telah berakhir (${scheduleCheck.waktuSelesai} WIB). Kotak suara digital telah ditutup.`);
+      setConfirmModalOpen(false);
+      setAccessDeniedModal(scheduleCheck);
+      return;
+    }
 
     setIsLoading(true);
     setErrorMessage('');
@@ -532,21 +559,6 @@ export const PemilihView: React.FC<PemilihViewProps> = ({
             </p>
           </div>
 
-          {/* Election Status Check Warning */}
-          {pemilihan.status === 'BELUM_DIMULAI' && (
-            <div className="p-3 mb-5 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-900 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-              <span>Pemilihan saat ini berstatus <strong>BELUM DIMULAI</strong>.</span>
-            </div>
-          )}
-
-          {pemilihan.status === 'SELESAI' && (
-            <div className="p-3 mb-5 bg-blue-50 border border-blue-200 rounded-2xl text-xs text-blue-900 flex items-center gap-2">
-              <Info className="w-4 h-4 text-blue-600 shrink-0" />
-              <span>Pemilihan telah <strong>SELESAI</strong>. Kotak suara telah ditutup.</span>
-            </div>
-          )}
-
           {/* Form Login */}
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
@@ -567,16 +579,16 @@ export const PemilihView: React.FC<PemilihViewProps> = ({
             </div>
 
             {loginError && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-start gap-2">
+              <div className="p-3.5 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-800 flex items-start gap-2.5 shadow-sm">
                 <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-                <span>{loginError}</span>
+                <span className="leading-relaxed font-semibold">{loginError}</span>
               </div>
             )}
 
             <button
               type="submit"
-              disabled={isLoading || pemilihan.status !== 'SEDANG_BERLANGSUNG'}
-              className="w-full py-4 px-6 bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed text-slate-950 font-black text-base rounded-2xl shadow-lg shadow-amber-500/25 transition-all active:scale-95 flex items-center justify-center gap-2"
+              disabled={isLoading}
+              className="w-full py-4 px-6 bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 disabled:opacity-50 text-slate-950 font-black text-base rounded-2xl shadow-lg shadow-amber-500/25 transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
             >
               {isLoading ? (
                 <span className="inline-block w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
@@ -588,7 +600,6 @@ export const PemilihView: React.FC<PemilihViewProps> = ({
               )}
             </button>
           </form>
-
 
           {/* Security Guarantee Notice */}
           <div className="mt-5 flex items-center justify-center gap-2 text-xs text-slate-400">
@@ -604,6 +615,76 @@ export const PemilihView: React.FC<PemilihViewProps> = ({
         </p>
 
       </div>
+
+      {/* MODAL NOTIFIKASI: GAGAL MASUK KARENA JADWAL */}
+      {accessDeniedModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-200 relative animate-in fade-in zoom-in-95 duration-200 text-slate-900">
+            <button
+              type="button"
+              onClick={() => setAccessDeniedModal(null)}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="text-center mb-5">
+              <div
+                className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg ${
+                  accessDeniedModal.status === 'MELEBIHI_WAKTU_TANGGAL' ||
+                  accessDeniedModal.status === 'MELEBIHI_WAKTU_JAM' ||
+                  accessDeniedModal.status === 'STATUS_SELESAI'
+                    ? 'bg-rose-100 text-rose-600 shadow-rose-500/20'
+                    : 'bg-amber-100 text-amber-600 shadow-amber-500/20'
+                }`}
+              >
+                <Lock className="w-8 h-8" />
+              </div>
+              <span className="inline-block px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-200 mb-2">
+                GAGAL MASUK KE BILIK SUARA
+              </span>
+              <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                {accessDeniedModal.judul}
+              </h3>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-5 text-xs space-y-3 text-slate-700">
+              <p className="font-semibold text-slate-900 leading-relaxed bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
+                {accessDeniedModal.pesan}
+              </p>
+
+              <div className="pt-2 border-t border-slate-200 space-y-1.5">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Jadwal Pelaksanaan:</span>
+                  <span className="font-bold text-slate-900 text-right">
+                    {accessDeniedModal.hariPelaksanaan}, {accessDeniedModal.tanggalPelaksanaanFormatted}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Jam Operasional:</span>
+                  <span className="font-mono font-bold text-slate-900">
+                    {accessDeniedModal.waktuMulai} - {accessDeniedModal.waktuSelesai} WIB
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Waktu Percobaan Masuk:</span>
+                  <span className="font-mono font-bold text-rose-600">
+                    {accessDeniedModal.waktuSekarangStr} WIB
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setAccessDeniedModal(null)}
+              className="w-full py-3.5 px-6 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl shadow-lg transition-transform active:scale-95 text-sm"
+            >
+              MENGERTI & KEMBALI
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 };
