@@ -181,6 +181,12 @@ export default function App() {
             calonList={calonList}
             pemilihList={pemilihList}
             suaraList={suaraList}
+            onToggleHasilPenonton={(tampilkan) => {
+              const updated = { ...pemilihan, hasilDitampilkanKePenonton: tampilkan };
+              setPemilihan(updated);
+              StorageService.savePengaturanPemilihan(updated, 'operator-monitor');
+              CloudService.savePengaturanPemilihanCloud(updated);
+            }}
           />
         )}
 

@@ -401,6 +401,9 @@ export const StorageService = {
   getSuara(): Suara[] {
     return getStorage<Suara[]>(STORAGE_KEYS.SUARA, DEFAULT_SUARA);
   },
+  saveSuara(votes: Suara[]): void {
+    setStorage(STORAGE_KEYS.SUARA, votes);
+  },
   castVote(idPemilih: string, idCalon: string): { success: boolean; message: string; voteId?: string } {
     const pemilihList = this.getPemilih();
     const voter = pemilihList.find((p) => p.id === idPemilih);

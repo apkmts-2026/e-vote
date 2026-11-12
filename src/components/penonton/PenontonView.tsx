@@ -1,17 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Tv,
   Users,
-  Vote,
   TrendingUp,
   Clock,
-  Sparkles,
   Trophy,
   CheckCircle2,
-  AlertCircle,
   Radio,
-  RefreshCw,
-  Maximize2,
   Award
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -23,6 +17,7 @@ interface PenontonViewProps {
   calonList: Calon[];
   pemilihList: Pemilih[];
   suaraList: Suara[];
+  onToggleHasilPenonton?: (tampilkan: boolean) => void;
 }
 
 export const PenontonView: React.FC<PenontonViewProps> = ({
@@ -31,10 +26,23 @@ export const PenontonView: React.FC<PenontonViewProps> = ({
   calonList,
   pemilihList,
   suaraList,
+  onToggleHasilPenonton,
 }) => {
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
   const [pulseAnimation, setPulseAnimation] = useState<boolean>(false);
   const [prevCount, setPrevCount] = useState<number>(suaraList.length);
+
+  // Status tampilan hasil akhir suara (bisa dikontrol dari tombol monitor atau dari broadcast admin)
+  const [showHasilAkhir, setShowHasilAkhir] = useState<boolean>(() =>
+    Boolean(pemilihan.hasilDitampilkanKePenonton)
+  );
+
+  // Selalu sinkronkan jika admin mengubah status penayangan secara remote
+  useEffect(() => {
+    setShowHasilAkhir(Boolean(pemilihan.hasilDitampilkanKePenonton));
+  }, [pemilihan.hasilDitampilkanKePenonton]);
+
+  const isShowingResults = showHasilAkhir || Boolean(pemilihan.hasilDitampilkanKePenonton);
 
   // Trigger brief pulse animation whenever vote count increases
   useEffect(() => {
@@ -54,16 +62,16 @@ export const PenontonView: React.FC<PenontonViewProps> = ({
     return () => clearInterval(interval);
   }, []);
 
-  // Fire confetti if results are displayed to audience and status is finished
+  // Fire confetti if results are displayed to audience
   useEffect(() => {
-    if (pemilihan.status === 'SELESAI' && pemilihan.hasilDitampilkanKePenonton) {
+    if (isShowingResults) {
       confetti({
-        particleCount: 100,
-        spread: 70,
+        particleCount: 120,
+        spread: 80,
         origin: { y: 0.6 },
       });
     }
-  }, [pemilihan.status, pemilihan.hasilDitampilkanKePenonton]);
+  }, [isShowingResults]);
 
   const totalDPT = pemilihList.length;
   const totalSuaraMasuk = suaraList.length;
@@ -128,8 +136,8 @@ export const PenontonView: React.FC<PenontonViewProps> = ({
             </div>
           </div>
 
-          {/* Status & Live Refresh Indicator */}
-          <div className="flex items-center gap-3">
+          {/* Status & Live Refresh Indicator + Tombol Hasil Akhir */}
+          <div className="flex flex-wrap items-center justify-center md:justify-end gap-3">
             <div className="text-right hidden sm:block">
               <span className="text-[10px] text-slate-500 font-mono font-bold block">Sinkronisasi Realtime</span>
               <span className="text-xs font-mono font-bold text-emerald-600 flex items-center gap-1.5 justify-end">
@@ -155,6 +163,24 @@ export const PenontonView: React.FC<PenontonViewProps> = ({
                 </span>
               )}
             </div>
+
+            {/* 1 Tombol Utama Hasil Akhir Suara */}
+            <button
+              type="button"
+              onClick={() => {
+                const nextVal = !isShowingResults;
+                setShowHasilAkhir(nextVal);
+                onToggleHasilPenonton?.(nextVal);
+              }}
+              className={`px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-black uppercase tracking-wider transition-all flex items-center gap-2 shadow-lg cursor-pointer active:scale-95 ${
+                isShowingResults
+                  ? 'bg-slate-900 hover:bg-slate-800 text-white ring-2 ring-slate-700'
+                  : 'bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-slate-950 ring-2 ring-amber-400 shadow-amber-500/40'
+              }`}
+            >
+              <Trophy className={`w-4 h-4 ${isShowingResults ? 'text-amber-400' : 'text-slate-950'}`} />
+              <span>{isShowingResults ? '⬅ PEMANTAUAN SUARA' : '🏆 HASIL AKHIR SUARA'}</span>
+            </button>
           </div>
 
         </div>
@@ -163,45 +189,120 @@ export const PenontonView: React.FC<PenontonViewProps> = ({
       {/* Main Content Stage */}
       <div className="relative z-10 max-w-7xl mx-auto w-full my-8">
 
-        {/* SCENARIO 1: PEMILIHAN BELUM DIMULAI */}
-        {pemilihan.status === 'BELUM_DIMULAI' && (
-          <div className="bg-white/95 border border-white/80 rounded-3xl p-8 sm:p-16 text-center max-w-3xl mx-auto backdrop-blur-xl shadow-2xl text-slate-900">
-            <div className="w-20 h-20 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-6 border border-amber-300 shadow-md">
-              <Clock className="w-10 h-10 animate-spin" style={{ animationDuration: '10s' }} />
+        {/* JIKA MODE HASIL AKHIR AKTIF (DARI TOMBOL MONITOR ATAU DARI BROADCAST ADMIN) */}
+        {isShowingResults ? (
+          <div className="space-y-8 animate-in fade-in duration-300">
+            {/* Header Hasil Akhir */}
+            <div className="text-center py-6 px-8 rounded-3xl bg-white/95 backdrop-blur-xl border border-white/80 max-w-4xl mx-auto shadow-2xl text-slate-900 relative">
+              <div className="flex flex-wrap items-center justify-center gap-2 mb-3">
+                <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest bg-yellow-100 text-yellow-900 border border-yellow-300 shadow-sm">
+                  <Trophy className="w-4 h-4 text-yellow-600" />
+                  HASIL AKHIR RESMI PEMILIHAN
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowHasilAkhir(false);
+                    onToggleHasilPenonton?.(false);
+                  }}
+                  className="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition-colors cursor-pointer"
+                >
+                  ⬅ Kembali ke Pemantauan
+                </button>
+              </div>
+
+              <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-slate-900 uppercase">
+                PEROLEHAN SUARA CALON KETUA OSIS
+              </h2>
+              <p className="text-slate-600 font-bold text-sm sm:text-base mt-2">
+                Total Suara Masuk: <strong className="text-slate-900 font-mono">{totalSuaraMasuk}</strong> dari <strong className="text-slate-900 font-mono">{totalDPT}</strong> Pemilih Terdaftar ({persentase}% Partisipasi)
+              </p>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mb-3">
-              PEMILIHAN BELUM DIMULAI
-            </h2>
-            <p className="text-slate-600 font-medium text-base sm:text-lg max-w-xl mx-auto mb-8">
-              Panitia sedang mempersiapkan bilik suara digital. Layar ini akan menampilkan perhitungan suara masuk secara otomatis setelah pemilihan resmi dibuka.
-            </p>
-            <div className="grid grid-cols-2 gap-4 max-w-md mx-auto text-left">
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 shadow-sm">
-                <span className="text-xs text-slate-500 uppercase font-bold">Jadwal Mulai:</span>
-                <p className="text-lg font-mono font-black text-amber-600">{pemilihan.waktuMulai} WIB</p>
-              </div>
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 shadow-sm">
-                <span className="text-xs text-slate-500 uppercase font-bold">Total Pemilih (DPT):</span>
-                <p className="text-lg font-mono font-black text-slate-900">{totalDPT} Siswa</p>
-              </div>
+
+            {/* Candidate Result Cards with Detailed Votes */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 max-w-6xl mx-auto">
+              {candidateTally.map((calon) => {
+                const isWinner = calon.suara === highestVotes && calon.suara > 0;
+                return (
+                  <div
+                    key={calon.id}
+                    className={`bg-white/95 backdrop-blur-xl rounded-3xl border-2 overflow-hidden shadow-2xl relative transition-all duration-300 flex flex-col text-slate-900 ${
+                      isWinner
+                        ? 'border-amber-400 ring-4 ring-amber-300/40 scale-102'
+                        : 'border-white/80'
+                    }`}
+                  >
+                    {isWinner && (
+                      <div className="bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 text-slate-950 font-black text-xs py-2 px-4 text-center tracking-wider flex items-center justify-center gap-1.5 shadow-md">
+                        <Award className="w-4 h-4" />
+                        PEROLEHAN SUARA TERTINGGI (TERPILIH)
+                      </div>
+                    )}
+
+                    <div className="p-6 flex-1 flex flex-col justify-between">
+                      {/* Photo and Number */}
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="relative">
+                          <img
+                            src={calon.foto}
+                            alt={calon.nama}
+                            className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border-2 border-slate-200 shadow-md"
+                          />
+                          <span className="absolute -top-2 -left-2 w-8 h-8 rounded-full bg-red-600 text-white font-black text-xs flex items-center justify-center border-2 border-white shadow-md">
+                            0{calon.noUrut}
+                          </span>
+                        </div>
+                        <div className="min-w-0">
+                          <span className="text-xs text-slate-500 font-bold">NOMOR URUT 0{calon.noUrut}</span>
+                          <h3 className="text-lg sm:text-xl font-black text-slate-900 leading-tight truncate">
+                            {calon.nama}
+                          </h3>
+                          <p className="text-xs text-slate-500 font-semibold">Kelas {calon.kelas}</p>
+                        </div>
+                      </div>
+
+                      {/* Vote Count & Percent */}
+                      <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 mb-4 shadow-inner">
+                        <div className="flex items-baseline justify-between">
+                          <div>
+                            <span className="text-4xl sm:text-5xl font-black font-mono text-slate-900">
+                              {calon.suara}
+                            </span>
+                            <span className="text-xs text-slate-500 font-bold ml-1.5">Suara</span>
+                          </div>
+                          <span className="text-2xl sm:text-3xl font-black font-mono text-emerald-600">
+                            {calon.persentase}%
+                          </span>
+                        </div>
+
+                        {/* Bar */}
+                        <div className="h-3.5 w-full bg-slate-200 rounded-full mt-3 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-1000 ${
+                              isWinner
+                                ? 'bg-gradient-to-r from-amber-500 to-yellow-400'
+                                : 'bg-gradient-to-r from-blue-600 to-indigo-500'
+                            }`}
+                            style={{ width: `${calon.persentaseNum}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Tagline */}
+                      {calon.tagline && (
+                        <p className="text-xs text-slate-600 italic text-center font-medium">
+                          "{calon.tagline}"
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
-        )}
-
-        {/* SCENARIO 2: PEMILIHAN SEDANG BERLANGSUNG */}
-        {pemilihan.status === 'SEDANG_BERLANGSUNG' && (
-          <div className="space-y-8">
-            
-            {/* Massive Counter Banner */}
-            <div className="text-center py-4 px-6 rounded-3xl bg-white/95 backdrop-blur-xl border border-white/80 max-w-2xl mx-auto shadow-xl text-slate-900">
-              <p className="text-sm sm:text-base font-black tracking-widest text-amber-600 uppercase mb-1">
-                PEMUNGUTAN SUARA SEDANG BERLANGSUNG
-              </p>
-              <h2 className="text-base sm:text-lg font-bold text-slate-700">
-                Jumlah Suara yang Telah Masuk ke Kotak Suara Digital
-              </h2>
-            </div>
-
+        ) : (
+          /* JIKA MODE PEMANTAUAN SUARA MASUK */
+          <div className="space-y-8 animate-in fade-in duration-300">
             {/* Giant Metric Display */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 max-w-5xl mx-auto">
               
@@ -366,124 +467,6 @@ export const PenontonView: React.FC<PenontonViewProps> = ({
                     </div>
                   ))}
               </div>
-            </div>
-
-          </div>
-        )}
-
-        {/* SCENARIO 3: PEMILIHAN SELESAI, TAPI ADMIN BELUM MENGAKTIFKAN TAMPILKAN HASIL */}
-        {pemilihan.status === 'SELESAI' && !pemilihan.hasilDitampilkanKePenonton && (
-          <div className="bg-white/95 border border-white/80 rounded-3xl p-8 sm:p-16 text-center max-w-3xl mx-auto backdrop-blur-xl shadow-2xl text-slate-900">
-            <div className="w-20 h-20 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mx-auto mb-6 border border-blue-200 shadow-md">
-              <Clock className="w-10 h-10 animate-pulse" />
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mb-3">
-              PEMILIHAN SUDAH SELESAI
-            </h2>
-            <p className="text-slate-600 font-medium text-base sm:text-lg max-w-xl mx-auto mb-6">
-              Pemungutan suara telah ditutup. Panitia sedang melakukan proses validasi dan verifikasi data suara masuk.
-            </p>
-            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-sm text-slate-700 font-semibold max-w-md mx-auto shadow-sm">
-              Hasil akhir akan segera ditampilkan di layar ini setelah Admin mengaktifkan <strong>"TAMPILKAN HASIL"</strong>.
-            </div>
-          </div>
-        )}
-
-        {/* SCENARIO 4: PEMILIHAN SELESAI & ADMIN SUDAH MENGAKTIFKAN TAMPILKAN HASIL (FULL REVEAL) */}
-        {pemilihan.status === 'SELESAI' && pemilihan.hasilDitampilkanKePenonton && (
-          <div className="space-y-8">
-            <div className="text-center py-6 px-8 rounded-3xl bg-white/95 backdrop-blur-xl border border-white/80 max-w-4xl mx-auto shadow-2xl text-slate-900">
-              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest bg-yellow-100 text-yellow-900 border border-yellow-300 mb-3 shadow-sm">
-                <Trophy className="w-4 h-4 text-yellow-600" />
-                HASIL AKHIR RESMI PEMILIHAN
-              </span>
-              <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-slate-900 uppercase">
-                PEROLEHAN SUARA CALON KETUA OSIS
-              </h2>
-              <p className="text-slate-600 font-bold text-sm sm:text-base mt-2">
-                Total Suara Masuk: <strong className="text-slate-900">{totalSuaraMasuk}</strong> dari <strong className="text-slate-900">{totalDPT}</strong> Pemilih Terdaftar ({persentase}% Partisipasi)
-              </p>
-            </div>
-
-            {/* Candidate Result Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 max-w-6xl mx-auto">
-              {candidateTally.map((calon) => {
-                const isWinner = calon.suara === highestVotes && calon.suara > 0;
-                return (
-                  <div
-                    key={calon.id}
-                    className={`bg-white/95 backdrop-blur-xl rounded-3xl border-2 overflow-hidden shadow-2xl relative transition-all duration-300 flex flex-col text-slate-900 ${
-                      isWinner
-                        ? 'border-amber-400 ring-4 ring-amber-300/40 scale-102'
-                        : 'border-white/80'
-                    }`}
-                  >
-                    {isWinner && (
-                      <div className="bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 text-slate-950 font-black text-xs py-2 px-4 text-center tracking-wider flex items-center justify-center gap-1.5 shadow-md">
-                        <Award className="w-4 h-4" />
-                        PEROLEHAN SUARA TERTINGGI (TERPILIH)
-                      </div>
-                    )}
-
-                    <div className="p-6 flex-1 flex flex-col justify-between">
-                      {/* Photo and Number */}
-                      <div className="flex items-center gap-4 mb-4">
-                        <div className="relative">
-                          <img
-                            src={calon.foto}
-                            alt={calon.nama}
-                            className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border-2 border-slate-200 shadow-md"
-                          />
-                          <span className="absolute -top-2 -left-2 w-8 h-8 rounded-full bg-red-600 text-white font-black text-xs flex items-center justify-center border-2 border-white shadow-md">
-                            0{calon.noUrut}
-                          </span>
-                        </div>
-                        <div className="min-w-0">
-                          <span className="text-xs text-slate-500 font-bold">NOMOR URUT 0{calon.noUrut}</span>
-                          <h3 className="text-lg sm:text-xl font-black text-slate-900 leading-tight truncate">
-                            {calon.nama}
-                          </h3>
-                          <p className="text-xs text-slate-500 font-semibold">Kelas {calon.kelas}</p>
-                        </div>
-                      </div>
-
-                      {/* Vote Count & Percent */}
-                      <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 mb-4 shadow-inner">
-                        <div className="flex items-baseline justify-between">
-                          <div>
-                            <span className="text-3xl sm:text-4xl font-black font-mono text-slate-900">
-                              {calon.suara}
-                            </span>
-                            <span className="text-xs text-slate-500 font-bold ml-1.5">Suara</span>
-                          </div>
-                          <span className="text-xl sm:text-2xl font-black font-mono text-emerald-600">
-                            {calon.persentase}%
-                          </span>
-                        </div>
-
-                        {/* Bar */}
-                        <div className="h-3 w-full bg-slate-200 rounded-full mt-3 overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-all duration-1000 ${
-                              isWinner
-                                ? 'bg-gradient-to-r from-amber-500 to-yellow-400'
-                                : 'bg-gradient-to-r from-blue-600 to-indigo-500'
-                            }`}
-                            style={{ width: `${calon.persentaseNum}%` }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Tagline */}
-                      {calon.tagline && (
-                        <p className="text-xs text-slate-600 italic text-center font-medium">
-                          "{calon.tagline}"
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
             </div>
           </div>
         )}

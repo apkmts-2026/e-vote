@@ -335,6 +335,37 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       updated.hasilDitampilkanKePenonton ? 'Tampilkan Hasil ke Penonton' : 'Sembunyikan Hasil dari Penonton',
       `Status penayangan hasil ke layar penonton diubah`
     );
+    showToast(
+      updated.hasilDitampilkanKePenonton
+        ? '✓ Hasil perolehan suara sekarang DITAMPILKAN di layar monitor penonton!'
+        : 'Hasil perolehan suara DISEMBUNYIKAN dari layar monitor penonton.',
+      updated.hasilDitampilkanKePenonton ? 'success' : 'info'
+    );
+    onDataChange();
+  };
+
+  // Reconcile and Clean Orphan Votes / Fix Data Inconsistency
+  const handleReconcileDataSuara = () => {
+    const validCalonIds = new Set(calonList.map((c) => c.id));
+    const cleanedSuara = suaraList.filter((s) => validCalonIds.has(s.idCalon));
+
+    const voterIdsWhoVoted = new Set(cleanedSuara.map((s) => s.idPemilih));
+    const syncedPemilih = pemilihList.map((p) => {
+      const hasVoted =
+        voterIdsWhoVoted.has(p.id) ||
+        voterIdsWhoVoted.has(p.nisNisn) ||
+        voterIdsWhoVoted.has(p.kodePemilih);
+      return {
+        ...p,
+        statusMemilih: hasVoted,
+      };
+    });
+
+    StorageService.savePemilih(syncedPemilih, currentAdmin?.username || 'admin');
+    CloudService.importPemilihBulkCloud(syncedPemilih);
+    StorageService.saveSuara(cleanedSuara);
+
+    showToast('Data suara dan status pemilih berhasil disinkronkan & dibersihkan!', 'success');
     onDataChange();
   };
 
@@ -1986,9 +2017,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       </span>
                     </div>
                   </div>
-                  <span className="font-mono font-bold text-xs bg-white/80 px-2.5 py-1 rounded-lg">
-                    {isIntegrityValid ? 'STATUS: VALID' : 'STATUS: INVALID'}
-                  </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {!isIntegrityValid && (
+                      <button
+                        type="button"
+                        onClick={handleReconcileDataSuara}
+                        className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                        title="Hapus suara yatim piatu dan sinkronkan status pemilih"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        Sinkronkan & Perbaiki Data
+                      </button>
+                    )}
+                    <span className="font-mono font-bold text-xs bg-white/80 px-2.5 py-1 rounded-lg">
+                      {isIntegrityValid ? 'STATUS: VALID' : 'STATUS: INVALID'}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Candidates Result Cards (Requirement 10) */}
